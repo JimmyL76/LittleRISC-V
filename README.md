@@ -8,7 +8,7 @@ The purpose of this project is to expand upon my learning of RTL design and comp
 
 ## Architecture
 
-![little-risc-v architecture](./readme/paths.png "little-risc-v architecture")
+![little-risc-v architecture](./readme/little-risc-v-architecture200.png "little-risc-v architecture")
 
 ## Implementation Details
 
