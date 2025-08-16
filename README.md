@@ -57,4 +57,6 @@ Next in line...
 - [ ] Implementing RISC-V ISA extensions
 
 ## Acknowledgements
-Most of this project is based on the knowledge I've gathered from my Digital System Design with HDL and Computer Architecture classes at university, with the specifics of the ISA coming from [RISC-V](https://github.com/riscv) RV32I.
+Most of this project is based on the knowledge I've gathered from my Digital System Design with HDL and Computer Architecture classes at university.
+
+Special thanks for the specifics of the ISA coming from [RISC-V](https://github.com/riscv) RV32I.
