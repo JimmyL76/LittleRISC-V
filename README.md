@@ -1,6 +1,6 @@
 # LittleRISC-V
 
-A pipelined RISC-V processor for FPGA platforms, built for educational purposes and hands-on learning.
+A pipelined RISC-V processor for FPGA platforms, built for educational purposes and hands-on learning. Project Time: ~50 Hours.
 
 ## Overview
 
