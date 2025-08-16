@@ -53,8 +53,8 @@ Currently working on...
 Next in line...
 - [ ] Power optimization techniques, such as clock gating and dynamic voltage and frequency scaling
 - [ ] Advanced Branch Prediction with two-bit predictors or branch target buffers
-- [ ] More robust memory cache implmentation
-- [ ] Implmenting RISC-V ISA extensions
+- [ ] More robust memory cache implementation
+- [ ] Implementing RISC-V ISA extensions
 
 ## Acknowledgements
 Most of this project is based on the knowledge I've gathered from my Digital System Design with HDL and Computer Architecture classes at university, with the specifics of the ISA coming from [RISC-V](https://github.com/riscv) RV32I.
