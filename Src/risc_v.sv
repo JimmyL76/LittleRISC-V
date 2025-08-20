@@ -41,7 +41,7 @@ module risc_v(
         I_JALR = 7'b1100111,
         U_LUI = 7'b0110111,
         U_AUIPC = 7'b0010111
-    } opcode_e;
+    } opcode_t;
 
     // define control store for each stage
     typedef struct packed {
@@ -69,14 +69,7 @@ module risc_v(
         m_store_t m_store;
     } e_store_t;
             
-//    /* create struct for parts of instr that need to be passed
-//    to subsequent stages */
-//    typedef struct packed {
-//        opcode_e opcode; 
-//        logic [2:0] funct3;
-//        logic [6:0] funct7;
-//    } instr_t;
-    
+    // create struct for parts of instr that need to be passed
     // define each pipeline stage's registers
     typedef struct packed {
         logic [31:0] pc;
@@ -146,24 +139,12 @@ module risc_v(
     assign D_Mem_Bus = (memory.contr.DMemR_W)? store_result : 32'bZ;
     assign I_ADDR = (IMemR_W) ? InitPC[31:2] : PC[31:2]; 
     assign D_ADDR = memory.alu[31:2];
-//    Memory I_MEM(I_CS, I_WE, CLK, I_ADDR, I_Mem_Bus);
-//    Memory D_MEM(D_CS, D_WE, CLK, D_ADDR, D_Mem_Bus);
     
     // DECODE LOGIC
     // control signals
-    opcode_e opcode; assign opcode = opcode_e'(decode.instr[6:0]);
+    opcode_t opcode; assign opcode = opcode_t'(decode.instr[6:0]);
     logic [2:0] funct3; assign funct3 = decode.instr[14:12];
     logic [6:0] funct7; assign funct7 = decode.instr[31:25];
-    
-//            R = 7'b0110011,
-//        I_AR = 7'b0010011,
-//        I_LD = 7'b0000011,
-//        S = 7'b0100011,
-//        B = 7'b1100011,
-//        J_JAL = 7'b1101111,
-//        I_JALR = 7'b1100111,
-//        U_LUI = 7'b0110111,
-//        U_AUIPC = 7'b0010111
     
     // ld a reg if not store or BR instr
     wire LdReg = (opcode != S) && (opcode != B); 
@@ -189,8 +170,8 @@ module risc_v(
     // BR is don't care if IsBR_J is 0, Jump matters but will always be 0 if is BR;
     wire DMemEN = (opcode == S) || (opcode == I_LD);
     wire EXdone = !(opcode == I_LD); // 0 only if load
-        // ld's must wait until value is fetched from D-MEM
-        // every other instr gets rd or PC after execute
+    // ld's must wait until value is fetched from D-MEM
+    // every other instr gets rd or PC after execute
         
     // 0 add, 1 sub, 2 xor, 3 or, 4 and, 5 lshf R, 6 rshf R, 7 rshf R arith
     // 8 SLT (and U), 9 LUI, 10 AUIPC
@@ -214,7 +195,6 @@ module risc_v(
             endcase
         // for all other instr, using only add except lui (even AUIPC only adds)
         end else if(opcode == U_LUI) ALUK = 9;
-//        else if(opcode == U_AUIPC) ALUK = 10;
     end
     
     wire RS2Mux = !(opcode == R); // all other instr use imm (1)
@@ -296,7 +276,6 @@ module risc_v(
                 else alu_result = ($signed(alu_rs1) < $signed(alu_rs2)) ? 1 : 0;
             end
             9: alu_result = alu_rs2;
-//            10: alu_result = alu_rs1 + (alu_rs2 << 12);
             default: alu_result = 32'bx;
         endcase
     end
@@ -359,10 +338,7 @@ module risc_v(
             end 
             default: begin store_result = 32'bx; load_result = 32'bx; WE_result = 4'bx; end
         endcase
-            if(!memory.contr.DMemR_W) 
-                WE_result = 4'b0000; // if not store, WE is always 0
-            else
-                $display("Storing value");
+        if(!memory.contr.DMemR_W) WE_result = 4'b0000; // if not store, WE is always 0
     end
     assign D_WE = WE_result;
     // mem_enable
@@ -380,10 +356,6 @@ module risc_v(
     end
     
     // dependency logic
-    // if RS2need but also opcode == S, can jump to mem if only waiting on rs2
-    // and mux to RS2.M
-    //    logic LdPC, Ld_D, V_D, Ld_E, V_E, V_M, V_W, DF1, DF2;
-    //    logic [31:0] DF1_data, DF2_data, TargetPC_E;
     logic stall;
     wire e1_match = (RS1 == execute.rdid) && execute.valid;
     wire m1_match = (RS1 == memory.rdid) && memory.valid;
@@ -398,9 +370,6 @@ module risc_v(
         
         // data dependency
         if(RS1need) begin
-//            if((!e1_match) || (!m1_match) || (!w1_match))
-//                stall = 0;
-//            else 
             if((e1_match) && (!execute.contr.EXdone))
                 stall = 1; // stall if waiting for load
             else begin
@@ -482,7 +451,6 @@ module risc_v(
                 decode.instr <= I_Mem_Bus;
             end
             
-//            if(execute.load) begin
             execute.contr.m_store.w_store.LdReg <= LdReg;
             execute.contr.m_store.w_store.IsBR_J <= IsBR_J;
             execute.contr.m_store.DataSize <= DataSize;
@@ -499,7 +467,6 @@ module risc_v(
             execute.rs1 <= (DF1) ? (DF1_data) : ReadReg1;
             execute.rs2 <= (DF2) ? (DF2_data) : ReadReg2;
             execute.rdid <= RD;
-//            end
                 
             memory.contr <= execute.contr.m_store;
             memory.npc <= nextpc;
