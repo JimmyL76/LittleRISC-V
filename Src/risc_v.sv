@@ -297,24 +297,24 @@ module risc_v(
                 if(memory.contr.Usign) 
                     case(memory.alu[1:0]) // assume no unaligned
                         0: begin
-                        load_result = D_Mem_Bus[15:0];
-                        WE_result = 4'b0011;
+                            load_result = D_Mem_Bus[15:0];
+                            WE_result = 4'b0011;
                         end
                         2: begin
-                        load_result = D_Mem_Bus[31:16];
-                        WE_result = 4'b1100;
+                            load_result = D_Mem_Bus[31:16];
+                            WE_result = 4'b1100;
                         end
                         default: begin load_result = 32'bx; WE_result = 4'bx; end
                     endcase
                 else 
                     case(memory.alu[1:0]) 
                         0: begin
-                        load_result = {{16{D_Mem_Bus[15]}}, D_Mem_Bus[15:0]};
-                        WE_result = 4'b0011;
+                            load_result = {{16{D_Mem_Bus[15]}}, D_Mem_Bus[15:0]};
+                            WE_result = 4'b0011;
                         end
                         2: begin 
-                        load_result = {{16{D_Mem_Bus[31]}}, D_Mem_Bus[31:16]};
-                        WE_result = 4'b1100;
+                            load_result = {{16{D_Mem_Bus[31]}}, D_Mem_Bus[31:16]};
+                            WE_result = 4'b1100;
                         end
                         default: begin load_result = 32'bx; WE_result = 4'bx; end
                     endcase
@@ -323,17 +323,41 @@ module risc_v(
                 store_result = {4{memory.rs2[7:0]}};
                 if(memory.contr.Usign) 
                     case(memory.alu[1:0]) 
-                        0: begin load_result = D_Mem_Bus[7:0]; WE_result = 4'b0001; end
-                        1: begin load_result = D_Mem_Bus[15:8]; WE_result = 4'b0010; end
-                        2: begin load_result = D_Mem_Bus[23:16]; WE_result = 4'b0100; end
-                        3: begin load_result = D_Mem_Bus[31:24]; WE_result = 4'b1000; end
+                        0: begin 
+                            load_result = D_Mem_Bus[7:0]; 
+                            WE_result = 4'b0001; 
+                        end
+                        1: begin 
+                            load_result = D_Mem_Bus[15:8]; 
+                            WE_result = 4'b0010; 
+                        end
+                        2: begin 
+                            load_result = D_Mem_Bus[23:16]; 
+                            WE_result = 4'b0100; 
+                        end
+                        3: begin 
+                            load_result = D_Mem_Bus[31:24]; 
+                            WE_result = 4'b1000; 
+                        end
                     endcase
                 else 
                     case(memory.alu[1:0]) 
-                        0: begin load_result = {{24{D_Mem_Bus[7]}}, D_Mem_Bus[7:0]}; WE_result = 4'b0001; end
-                        1: begin load_result = {{24{D_Mem_Bus[15]}}, D_Mem_Bus[15:8]}; WE_result = 4'b0010; end
-                        2: begin load_result = {{24{D_Mem_Bus[23]}}, D_Mem_Bus[23:16]}; WE_result = 4'b0100; end
-                        3: begin load_result = {{24{D_Mem_Bus[31]}}, D_Mem_Bus[31:24]}; WE_result = 4'b1000; end
+                        0: begin 
+                            load_result = {{24{D_Mem_Bus[7]}}, D_Mem_Bus[7:0]}; 
+                            WE_result = 4'b0001; 
+                        end
+                        1: begin 
+                            load_result = {{24{D_Mem_Bus[15]}}, D_Mem_Bus[15:8]}; 
+                            WE_result = 4'b0010; 
+                        end
+                        2: begin 
+                            load_result = {{24{D_Mem_Bus[23]}}, D_Mem_Bus[23:16]}; 
+                            WE_result = 4'b0100; 
+                        end
+                        3: begin 
+                            load_result = {{24{D_Mem_Bus[31]}}, D_Mem_Bus[31:24]}; 
+                            WE_result = 4'b1000; 
+                        end
                     endcase
             end 
             default: begin store_result = 32'bx; load_result = 32'bx; WE_result = 4'bx; end
