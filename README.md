@@ -1,6 +1,6 @@
 # LittleRISC-V
 
-A pipelined RISC-V processor for FPGA platforms, built for educational purposes and hands-on learning. Project Time: ~50 Hours.
+A pipelined RISC-V processor for FPGA platforms, built for educational purposes and hands-on learning. Current Project Time: ~50 Hours.
 
 ## Overview
 
@@ -48,7 +48,7 @@ To decide on the exact moment the current process is done executing, and stop fu
 
 Currently working on...
 - [ ] Synthesizing on Basys 3 FPGA
-- [ ] Adding a UART interface for serial communication and instruction loading
+- [ ] Writing UART interface for serial communication and instruction loading with Python
 
 Next in line...
 - [ ] Power optimization techniques, such as clock gating and dynamic voltage and frequency scaling
