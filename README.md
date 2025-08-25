@@ -20,9 +20,9 @@ The purpose of this project is to expand upon my learning of RTL design and comp
 5. **Writeback (W)**: Register file write-back
 
 ### Memory Interface
-The memory is separated into data memory in the Memory stage and instruction memory in the Fetch stage. The instruction memory is loaded either with a Vivado Mem file and `$readmemh`, or through UART control (to be implemented). Both are 32-bit word-based memory systems, with data memory using a WE logic block's 4-bit write-enable signals for byte and halfword instructions. C
+The memory is separated into data memory in the Memory stage and instruction memory in the Fetch stage. The instruction memory is loaded either with a Vivado Mem file and `$readmemh`, or through UART control (to be implemented). Both are 32-bit word-based memory systems, with data memory using a WE logic block's 4-bit write-enable signals for byte and halfword instructions.
 
-urrently, all memory requests are carried out using negative edge clocking to avoid single-cycle delays. In a real implementation, this might be replaced with proper DDR controllers, handshaking, and clock domain crossing.
+Currently, all memory requests are carried out using negative edge clocking to avoid single-cycle delays. In a real implementation, this might be replaced with proper DDR controllers, handshaking, and clock domain crossing.
 
 ### ALU Execution
 For arithmetic operations, a combined ALU and shifter unit carries out calculations involving the Program Counter, immediates, registers RS1/RS2, and signed/unsigned values. Address generation also occurs in this unit.
