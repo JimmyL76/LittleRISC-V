@@ -52,7 +52,9 @@ RISC-V uses six basic instruction formats (R, I, S, B, U, J) all with different 
 Careful management of each stage's valid bits and PC/decode load bits were necessary for propering pipelining function. Unbalanced coordination with data forwarding and branch predictions would either lead to suboptimal performance or pipeline stalling failures.
 
 ### Finish Signal
-To decide on the exact moment the current process is done executing, and stop further pipeline stages as soon as the last instruction is complete, isn't as simple for a pipelined processor as seeing a HALT instruction. Here, a HALT is implemented as just an address in the instruction memory with all 0's. Prior stages should begin getting valid bits set to 0 as soon as a HALT enters the decode stage. However, a branch/jump might still be in the later stages of the pipeline. This was solved using a `FinishCtr` that gets reset upon a jump back, but which also stops the processor once three finish signals are set in a row
+To decide on the exact moment the current process is done executing, and stop further pipeline stages as soon as the last instruction is complete, isn't as simple for a pipelined processor as seeing a HALT instruction. 
+
+Here, a HALT is implemented as just an address in the instruction memory with all 0's. Prior stages should begin getting valid bits set to 0 as soon as a HALT enters the decode stage. However, a branch/jump might still be in the later stages of the pipeline. This was solved using a `FinishCtr` that gets reset upon a jump back, but which also stops the processor once three finish signals are set in a row
 
 
 ## Next Steps
