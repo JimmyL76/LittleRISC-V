@@ -60,12 +60,15 @@ Here, a HALT is implemented as just an address in the instruction memory with al
 ## Next Steps
 
 Currently working on...
-- [ ] Synthesizing on Basys 3 FPGA
 - [ ] Writing UART interface for serial communication and instruction loading with Python
+- [ ] Synthesizing on Basys 3 FPGA
+- [ ] Optimizing for low power with clock gating/operand isolation
+- [ ] Adding FIFO for faster and more complex UART communication
+- [ ] Considering power islands with power gating of different logic blocks 
 
 Next in line...
-- [ ] Power optimization techniques, such as clock gating and dynamic voltage and frequency scaling
-- [ ] Advanced Branch Prediction with two-bit predictors or branch target buffers
+- [ ] Other power optimization techniques, such as dynamic voltage and frequency scaling
+- [ ] Advanced branch prediction with two-bit predictors or branch target buffers
 - [ ] More robust memory cache implementation
 - [ ] Implementing RISC-V ISA extensions
 
