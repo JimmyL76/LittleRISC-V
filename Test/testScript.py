@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 risc-v test generator for FPGA SysVerilog .mem files
 """
@@ -163,6 +161,10 @@ def generate_add_test():
     instructions = []
 
     instructions.append(addi_instr(1, 0, 1))
+    instructions.append(addi_instr(1, 1, 2))
+    instructions.append(addi_instr(1, 1, 4))
+    instructions.append(addi_instr(1, 1, 8))
+    instructions.append(addi_instr(1, 1, 10))
     instructions.append(addi_instr(2, 0, 2))
     instructions.append(add_instr(3, 1, 2))
 
@@ -242,30 +244,30 @@ def generate_mem_test():
     instructions.append(sw_instr(0,3,28)) # M7 = x86548654
     instructions.append(sw_instr(1,3,28)) # M8 = x86548654
     
-    instructions.append(lw_instr(5,0,0)) # R5 = x12345678
-    instructions.append(lh_instr(5,0,4)) # R5 = x5678
-    instructions.append(lhu_instr(6,0,4)) # R6 = x5678
-    instructions.append(lh_instr(5,0,4+2)) # R5 = x0000
-    instructions.append(lhu_instr(6,0,4+2)) # R6 = x0000
-    instructions.append(lb_instr(5,0,24)) # R5 = x00
-    instructions.append(lb_instr(5,0,24+1)) # R5 = x78
-    instructions.append(lb_instr(5,0,24+2)) # R5 = x00
-    instructions.append(lb_instr(5,0,24+3)) # R5 = x78
-    instructions.append(lbu_instr(6,0,24)) # R6 = x00
-    instructions.append(lbu_instr(6,0,24+1)) # R6 = x78
-    instructions.append(lbu_instr(6,0,24+2)) # R6 = x00
-    instructions.append(lbu_instr(6,0,24+3)) # R6 = x78
+    instructions.append(lw_instr(5,0,0)) # r5 = x12345678
+    instructions.append(lh_instr(5,0,4)) # r5 = x5678
+    instructions.append(lhu_instr(6,0,4)) # r6 = x5678
+    instructions.append(lh_instr(5,0,4+2)) # r5 = x0000
+    instructions.append(lhu_instr(6,0,4+2)) # r6 = x0000
+    instructions.append(lb_instr(5,0,24)) # r5 = x00
+    instructions.append(lb_instr(5,0,24+1)) # r5 = x78
+    instructions.append(lb_instr(5,0,24+2)) # r5 = x00
+    instructions.append(lb_instr(5,0,24+3)) # r5 = x78
+    instructions.append(lbu_instr(6,0,24)) # r6 = x00
+    instructions.append(lbu_instr(6,0,24+1)) # r6 = x78
+    instructions.append(lbu_instr(6,0,24+2)) # r6 = x00
+    instructions.append(lbu_instr(6,0,24+3)) # r6 = x78
 
-    instructions.append(lh_instr(5,0,28)) # R5 = xffff8654
-    instructions.append(lhu_instr(6,0,28)) # R6 = x00008654
-    instructions.append(lb_instr(5,0,28)) # R5 = x54
-    instructions.append(lb_instr(5,0,28+1)) # R5 = xffffff86
-    instructions.append(lb_instr(5,0,28+2)) # R5 = x54
-    instructions.append(lb_instr(5,0,28+3)) # R5 = xffffff86
-    instructions.append(lbu_instr(6,0,28)) # R6 = x54
-    instructions.append(lbu_instr(6,0,28+1)) # R6 = x86
-    instructions.append(lbu_instr(6,0,28+2)) # R6 = x54
-    instructions.append(lbu_instr(6,0,28+3)) # R6 = x86
+    instructions.append(lh_instr(5,0,28)) # r5 = xffff8654
+    instructions.append(lhu_instr(6,0,28)) # r6 = x00008654
+    instructions.append(lb_instr(5,0,28)) # r5 = x54
+    instructions.append(lb_instr(5,0,28+1)) # r5 = xffffff86
+    instructions.append(lb_instr(5,0,28+2)) # r5 = x54
+    instructions.append(lb_instr(5,0,28+3)) # r5 = xffffff86
+    instructions.append(lbu_instr(6,0,28)) # r6 = x54
+    instructions.append(lbu_instr(6,0,28+1)) # r6 = x86
+    instructions.append(lbu_instr(6,0,28+2)) # r6 = x54
+    instructions.append(lbu_instr(6,0,28+3)) # r6 = x86
 
 
     return instructions
@@ -355,6 +357,7 @@ def generate_dep_test():
     for i in range(1,5):
         instructions.append(addi_instr(i,0,i))
 
+    # data dependencies
     instructions.append(add_instr(5,1,2)) # r5 = 3
     instructions.append(add_instr(5,5,1)) # r5 = 4
     instructions.append(sub_instr(5,5,2)) # r5 = 2
@@ -363,6 +366,7 @@ def generate_dep_test():
     instructions.append(andi_instr(5,5,5)) # r5 = 1
     instructions.append(add_instr(6,6,1)) # r6 = 8
 
+    # control dependencies - already tested br taken after data dep
     instructions.append(beq_instr(4,0,-4*4)) 
     instructions.append(bne_instr(4,4,-4*4)) 
     instructions.append(blt_instr(4,2,-4*4)) # no jumps
@@ -370,6 +374,19 @@ def generate_dep_test():
     instructions.append(addi_instr(5,1,2)) # r5 = 3
     instructions.append(addi_instr(5,5,1)) # r5 = 4
     instructions.append(addi_instr(5,5,1)) # r5 = 5
+
+    # store-load-data dependencies
+    instructions.append(addi_instr(1,0,4))
+    instructions.append(addi_instr(2,0,0x12345678)) 
+    instructions.append(lui_instr(4,0x12345678)) 
+    instructions.append(add_instr(2,2,4)) # r2 = x12345678
+
+    instructions.append(sw_instr(0,2,0)) # M0 = x12345678
+    
+    instructions.append(lw_instr(5,0,0)) # r5 = x12345678
+    instructions.append(addi_instr(6,5,2)) # r6 = x1234567A
+    instructions.append(addi_instr(6,6,3)) # r6 = x1234567D
+    instructions.append(addi_instr(6,6,3)) # r6 = x12345680
 
     return instructions
 
@@ -390,7 +407,7 @@ def write_v(instructions, filename):
 
 # main
 if __name__ == "__main__":
-    full_test = generate_jump_test()
+    full_test = generate_add_test()
 
     # while (len(full_test) < 64):
     #     full_test.append(nop_instr())
