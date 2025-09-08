@@ -1,6 +1,6 @@
 # LittleRISC-V
 
-A pipelined RISC-V processor for FPGA platforms, built for educational purposes and hands-on learning. Current Project Time: ~55 Hours.
+A pipelined RISC-V processor for FPGA platforms, built for educational purposes and hands-on learning. Current Project Time: ~65 Hours.
 
 ## Overview
 
@@ -74,7 +74,9 @@ Here, a HALT is implemented as just an address in the instruction memory with al
 
 ## Video Demo
 
-This [video](https://drive.google.com/file/d/1oCVr7mlt3CBNa0UVcwoZdZKpuwLAlaj_/view?usp=sharing) shows the synthesized version on Basys 3 FPGA with the basic `generate_add_test()` example from `testScript.py`. The LEDs show the lower 16 bits of the ALU.RS1 execute stage input data, and the display shows the lower 16 bits in hex of Register 1 (which was added to with 1, 2, 4, 8, then 10).
+![Little RISC-V Basys 3 Add Demo](readme/Little-RISC-V%20Basys%203%20Add%20Demo.gif)
+
+Using the Basys 3 for synthesis, this video shows the basic `generate_add_test()` example from `testScript.py`. The LEDs show the lower 16 bits of the execute stage ALU's input data ALU.RS1, and the display shows the lower 16 hexadecimal bits of Register 1 (which was added to with 1, 2, 4, 8, then 10).
 
 ## Next Steps
 
