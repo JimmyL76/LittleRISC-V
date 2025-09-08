@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-`define SIMULATION
+//`define SIMULATION
 
 module Memory #(
   parameter init 
@@ -42,12 +42,12 @@ module Memory #(
         RAM[i] = 32'h0;
     end
     
-    //if(init) $readmemh(INIT_FILE, RAM);
-    if(init) $readmemh("instr.mem", RAM);
+    //if (init) $readmemh(INIT_FILE, RAM);
+    if (init) $readmemh("instr.mem", RAM);
     
     `ifdef SIMULATION
   // simulation code
-        if(init) begin
+        if (init) begin
             for (i = 0; i <(MEMSPACE); i = i+1) // testing
                 $display("I_MEM[%0d] = %b", i, RAM[i]);
         end
@@ -59,9 +59,9 @@ module Memory #(
 
   always @(negedge CLK)
   begin
-    if(CS && WE) begin
+    if (CS && WE) begin
         for (i=0; i < 4; i=i+1) 
-            if(WE[i]) RAM[ADDR][i*8 +: 8] <= Mem_Bus[i*8 +: 8];
+            if (WE[i]) RAM[ADDR][i*8 +: 8] <= Mem_Bus[i*8 +: 8];
     end
     data_out <= RAM[ADDR]; // load
   end

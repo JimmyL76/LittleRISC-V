@@ -22,11 +22,15 @@
 
 module risc_v_tb();
 
-    // outputs
-    logic CLK, RST, Pause, Tx, init;
     // inputs
-    logic [7:0] led;
-    logic Rx;
+    logic CLK, btnL, btnR, btnU, btnD, sw;
+    // U = step forward, L = show upper led bits, R = show upper disp bits
+    // reset switch tied to RST
+    
+    // outputs
+    logic [15:0] led; // taps alu.rs1
+    logic [6:0] seg; // displays REG[1]
+    logic [3:0] an;
     
     complete_risc_v r(.*);
     
@@ -35,26 +39,33 @@ module risc_v_tb();
     
     initial begin
         CLK <= 0;
-        init <= 0;
-        RST <= 1;
-        Pause <= 0;
+        // Init <= 0;
+        // RST <= 1;
+        // Pause <= 0;
+        btnL <= 0; btnR <= 0; btnU <= 0; btnD <= 0;
+        sw <= 1;
         cycle_count <= 0;
         forever #5 CLK <= ~CLK;
     end
     
     initial begin
-        #16;
-        RST = 0;
+        #50;
+        // RST = 0;
+        sw <= 0;
+        #20 btnU <= 1;
+        #20 btnU <= 0;
+        #20 btnU <= 1;
+        #20 btnU <= 0;
     end
     
     
 
     always @(posedge CLK) begin
-        $display("F.PC = %d", r.CPU.PC);
+        $display("F.PC = %d or 0x%h", r.CPU.PC, r.CPU.PC);
         
         $display("D.pc = %h", r.CPU.decode.pc);
         $display("D.instr = %h", r.CPU.decode.instr);
-        if(r.CPU.RS2Mux)
+        if (r.CPU.RS2Mux)
             $display("D.decoded_instr: %s R%0d, R%0d, #%0d", r.CPU.opcode.name, r.CPU.RD, r.CPU.RS1, $signed(r.CPU.IMM));
         else 
             $display("D.decoded_instr: %s R%0d, R%0d, R%0d", r.CPU.opcode.name, r.CPU.RD, r.CPU.RS1, r.CPU.RS2);        
@@ -126,10 +137,10 @@ module risc_v_tb();
         $display("Cycle Count = %d", cycle_count);
         cycle_count <= cycle_count + 1;
 //        $stop; // check waveform
-//        if(cycle_count == 21) begin
+//        if (cycle_count == 21) begin
 //            $display("Jumped to cycle %d", cycle_count);
 //        end
-        if(r.CPU.Finish_Ctr == 3) begin // stop when final instr is done
+        if (r.CPU.Finish_Ctr == 3) begin // stop when final instr is done
             for(integer j = 0; j<(2**6); j=j+1)
                 $display("D_MEM[%0d] = %h", j, r.D_MEM.RAM[j]); //mdump
             $display("TEST COMPLETE");

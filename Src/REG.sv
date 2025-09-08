@@ -20,37 +20,39 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module REG(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1, ReadReg2);
-  input CLK;
-  input LdR;
-  input [4:0] RD;
-  input [4:0] RS1;
-  input [4:0] RS2;
-  input [31:0] DataR;
-  output reg [31:0] ReadReg1;
-  output reg [31:0] ReadReg2;
+module REG #(parameter int R_IO_NUM = 1)(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1, ReadReg2, R_IO);
+  input logic CLK;
+  input logic LdR;
+  input logic [4:0] RD;
+  input logic [4:0] RS1;
+  input logic [4:0] RS2;
+  input logic [31:0] DataR;
+  output logic [31:0] ReadReg1;
+  output logic [31:0] ReadReg2;
+  output logic [31:0] R_IO;
 
-  reg [31:0] REG [0:31];
+  logic [31:0] REG [0:31];
   integer i;
   initial begin
     for(i=0; i<32; i=i+1)
         REG[i] = 32'h0;
   end
 
-  initial begin
-    ReadReg1 = 0;
-    ReadReg2 = 0;
-  end
+//  initial begin
+//    ReadReg1 = 0;
+//    ReadReg2 = 0;
+//  end
 
   always @(negedge CLK)
   begin
     // hardware R0 to 0
     REG[0] <= 0;
 
-    if(LdR == 1'b1)
+    if (LdR == 1'b1)
       REG[RD] <= DataR[31:0];
 
     ReadReg1 <= REG[RS1];
     ReadReg2 <= REG[RS2];
+    R_IO <= REG[R_IO_NUM];
   end
 endmodule

@@ -22,13 +22,14 @@
 `define CONTROL_STORE_SIZE 20
 
 module risc_v(
-    input logic CLK, RST, Pause, Init,
-    input logic [31:0] InitPC, init_data,
+    input logic CLK, RST, Init,
+    input logic [31:0] InitPC, Init_Data,
+    input logic dBTNL, dBTNR, dBTNU, dBTND,
     output logic I_CS, D_CS,
     output logic [3:0] I_WE, D_WE,
     output logic [31:0] I_ADDR, D_ADDR,
     inout [31:0] I_Mem_Bus, D_Mem_Bus,
-    output logic [7:0] led
+    output logic [31:0] R_led, R_IO
     );
     
     typedef enum logic [6:0] {
@@ -125,8 +126,7 @@ module risc_v(
     // for reg
     logic [4:0] RS1, RS2; assign RS1 = decode.instr[19:15], RS2 = decode.instr[24:20];
     logic [4:0] RD; assign RD = decode.instr[11:7];
-    REG registers(CLK, LdR_W, writeback.rdid, RS1, RS2, DataR_W, 
-                                                ReadReg1, ReadReg2);
+    REG registers(CLK, LdR_W, writeback.rdid, RS1, RS2, DataR_W, ReadReg1, ReadReg2, R_IO);
                                               
     logic [31:0] store_result;
     logic [31:0] PC;
@@ -135,7 +135,7 @@ module risc_v(
     assign IMemR_W = Init; // 0 = R, 1 = W
     assign I_CS = 1; assign D_CS = D_MemEN_result; 
     assign I_WE = (IMemR_W) ? 4'b1111 : 4'b0000; //drive memory bus only during writes
-    assign I_Mem_Bus = (IMemR_W) ? init_data : 32'bZ; // InitPC comes from UART controller
+    assign I_Mem_Bus = (IMemR_W) ? Init_Data : 32'bZ; // InitPC comes from UART controller
     assign D_Mem_Bus = (memory.contr.DMemR_W)? store_result : 32'bZ;
     assign I_ADDR = (IMemR_W) ? InitPC[31:2] : PC[31:2]; 
     assign D_ADDR = memory.alu[31:2];
@@ -179,14 +179,14 @@ module risc_v(
     logic [3:0] ALUK;
     always_comb begin
         ALUK = 0; // default value
-        if((opcode == R) || (opcode == I_AR)) begin
+        if ((opcode == R) || (opcode == I_AR)) begin
             case(funct3)
-                0: if((opcode == R) && (funct7 == 7'h20)) ALUK = 1; // else=default
+                0: if ((opcode == R) && (funct7 == 7'h20)) ALUK = 1; // else=default
                 1: ALUK = 5; // lshf
                 2, 3: ALUK = 8; // SLT
                 4: ALUK = 2; // xor
                 5: begin // imm[5:11] is also funct7
-                    if(funct7 == 7'h20) ALUK = 7;     
+                    if (funct7 == 7'h20) ALUK = 7;     
                     else ALUK = 6;    
                 end
                 6: ALUK = 3;
@@ -194,7 +194,7 @@ module risc_v(
                 default: ALUK = 0;           
             endcase
         // for all other instr, using only add except lui (even AUIPC only adds)
-        end else if(opcode == U_LUI) ALUK = 9;
+        end else if (opcode == U_LUI) ALUK = 9;
     end
     
     wire RS2Mux = !(opcode == R); // all other instr use imm (1)
@@ -239,17 +239,17 @@ module risc_v(
     logic PCMux_E;
     always_comb begin
         if ((!execute.valid) || (execute.contr.m_store.w_store.IsBR_J == 0)) PCMux_E = 0;
-        else if(execute.contr.m_store.w_store.IsBR_J == 2) PCMux_E = 1;
+        else if (execute.contr.m_store.w_store.IsBR_J == 2) PCMux_E = 1;
         else begin
             case(execute.contr.BR) 
                 0: PCMux_E = ($signed(execute.rs1) == $signed(execute.rs2));
                 1: PCMux_E = ($signed(execute.rs1) != $signed(execute.rs2));
                 2: begin
-                    if(execute.contr.m_store.Usign) PCMux_E = ((execute.rs1) < (execute.rs2));
+                    if (execute.contr.m_store.Usign) PCMux_E = ((execute.rs1) < (execute.rs2));
                     else PCMux_E = ($signed(execute.rs1) < $signed(execute.rs2));
                 end
                 3: begin
-                    if(execute.contr.m_store.Usign) PCMux_E = ((execute.rs1) >= (execute.rs2));
+                    if (execute.contr.m_store.Usign) PCMux_E = ((execute.rs1) >= (execute.rs2));
                     else PCMux_E = ($signed(execute.rs1) >= $signed(execute.rs2));
                 end
                 default: PCMux_E = 1'bx;
@@ -260,6 +260,7 @@ module risc_v(
     // ALU logic
     wire [31:0] alu_rs1 = (execute.contr.RS1Mux) ? execute.pc : execute.rs1;
     wire [31:0] alu_rs2 = (execute.contr.RS2Mux) ? execute.imm : execute.rs2; 
+    assign R_led = alu_rs1; // constant tap
     logic [31:0] alu_result;
     always_comb begin
         case(execute.contr.ALUK)
@@ -272,7 +273,7 @@ module risc_v(
             6: alu_result = alu_rs1 >> alu_rs2[4:0];
             7: alu_result = $signed(alu_rs1) >>> alu_rs2[4:0];
             8: begin
-                if(execute.contr.m_store.Usign) alu_result = (alu_rs1 < alu_rs2) ? 1 : 0;
+                if (execute.contr.m_store.Usign) alu_result = (alu_rs1 < alu_rs2) ? 1 : 0;
                 else alu_result = ($signed(alu_rs1) < $signed(alu_rs2)) ? 1 : 0;
             end
             9: alu_result = alu_rs2;
@@ -294,7 +295,7 @@ module risc_v(
             end
             1: begin
                 store_result = {2{memory.rs2[15:0]}};
-                if(memory.contr.Usign) 
+                if (memory.contr.Usign) 
                     case(memory.alu[1:0]) // assume no unaligned
                         0: begin
                             load_result = D_Mem_Bus[15:0];
@@ -321,7 +322,7 @@ module risc_v(
             end
             2: begin
                 store_result = {4{memory.rs2[7:0]}};
-                if(memory.contr.Usign) 
+                if (memory.contr.Usign) 
                     case(memory.alu[1:0]) 
                         0: begin 
                             load_result = D_Mem_Bus[7:0]; 
@@ -362,7 +363,7 @@ module risc_v(
             end 
             default: begin store_result = 32'bx; load_result = 32'bx; WE_result = 4'bx; end
         endcase
-        if(!memory.contr.DMemR_W) WE_result = 4'b0000; // if not store, WE is always 0
+        if (!memory.contr.DMemR_W) WE_result = 4'b0000; // if not store, WE is always 0
     end
     assign D_WE = WE_result;
     // mem_enable
@@ -393,8 +394,8 @@ module risc_v(
         DF1 = 0; DF2 = 0; stall = 0; DF1_data = 32'bx; DF2_data = 32'bx;
         
         // data dependency
-        if(RS1need) begin
-            if((e1_match) && (!execute.contr.EXdone))
+        if (RS1need) begin
+            if ((e1_match) && (!execute.contr.EXdone))
                 stall = 1; // stall if waiting for load
             else begin
                 DF1 = 1;
@@ -404,12 +405,12 @@ module risc_v(
                     3'b01?: DF1_data = (memory.contr.w_store.IsBR_J == 2) ? memory.npc : 
                                         (memory.contr.w_store.DMemEN) ? load_result : memory.alu;
                     3'b001: DF1_data = (writeback.contr.IsBR_J == 2) ? writeback.npc : 
-                                        (writeback.contr.DMemEN) ? writeback.data : memory.alu;
+                                        (writeback.contr.DMemEN) ? writeback.data : writeback.alu;
                     3'b000: DF1 = 0;
                 endcase 
             end 
-        end if(RS2need) begin
-            if((e2_match) && (!execute.contr.EXdone))
+        end if (RS2need) begin
+            if ((e2_match) && (!execute.contr.EXdone))
                 stall = 1; // stall if waiting for load
             else begin
                 DF2 = 1;
@@ -418,7 +419,7 @@ module risc_v(
                     3'b01?: DF2_data = (memory.contr.w_store.IsBR_J == 2) ? memory.npc : 
                                         (memory.contr.w_store.DMemEN) ? load_result : memory.alu;
                     3'b001: DF2_data = (writeback.contr.IsBR_J == 2) ? writeback.npc : 
-                                        (writeback.contr.DMemEN) ? writeback.data : memory.alu;
+                                        (writeback.contr.DMemEN) ? writeback.data : writeback.alu;
                     3'b000: DF2 = 0;
                 endcase 
             end         
@@ -426,52 +427,65 @@ module risc_v(
         
         // control dependency 
         // not taken was wrong, flush pipeline
-        if(PCMux_E) begin
+        if (PCMux_E) begin
 //            LdPC = 0; 
             TargetPC_E = alu_result; V_D = 0; V_E = 0;
             $display("Jumping from %h to %h", execute.pc, TargetPC_E);
         end
             
         // stall logic
-        if(stall) begin
+        if (stall) begin
             LdPC = 0; Ld_D = 0; V_E = 0;
         end
         
         // on finish, set that stage as invalid so reg/mem isn't affected
-        if(Finish) begin
+        if (Finish) begin
             V_E = 0;
         end
                 
+    end
+    
+    // step forward when dBTNU clicked then released
+    logic [1:0] Pause;
+    always_ff @(posedge CLK) begin
+        if (RST) 
+            Pause <= 1;
+        else 
+            case (Pause)
+                0: Pause <= 2; // when Pause=0, only move forward one cycle
+                1: if (dBTNU) Pause <= 0; // when Pause=1, dBTNU=1 goes to 0
+                2: if (!dBTNU) Pause <= 1; // wait for dBTNU=0, brings back to 1
+            endcase
     end
 
     // end when writeback instr is all 0s
     logic [1:0] Finish_Ctr;
     always_ff @(posedge CLK) begin
         // if last instr is a taken loop back, make sure to reset to 0 on !Finish
-        if(RST || !Finish) Finish_Ctr = 0;
-        else if(Finish_Ctr != 3) Finish_Ctr += 1;
+        if (RST || !Finish) Finish_Ctr = 0;
+        else if (Finish_Ctr != 3) Finish_Ctr += 1;
     end
 
     always_ff @(posedge CLK) begin
-        if(RST) begin
+        if (RST) begin
             PC <= 0;
             
-            decode.load <= 1;
+            // decode.load <= 1;
             
             decode.valid <= 0;
             execute.valid <= 0;
             memory.valid <= 0;
             writeback.valid <= 0;
-        end else if(!Pause && (Finish_Ctr != 3)) begin
-            decode.load <= Ld_D;
+        end else if ((!Pause) && (Finish_Ctr != 3)) begin
+            // decode.load <= Ld_D; // use load value directly
             decode.valid <= V_D;
             // if d.valid is 0, e.valid is always 0, otherwise V_E will always be right
             execute.valid <= (!decode.valid) ? 1'b0 : V_E;
             memory.valid <= execute.valid;
             writeback.valid <= memory.valid;
         
-            if(decode.load) begin
-                decode.pc <= PC;
+            if (Ld_D) begin // stall stops update from fetch
+                decode.pc <= PC; 
                 decode.instr <= I_Mem_Bus;
             end
             
@@ -504,7 +518,7 @@ module risc_v(
             writeback.alu <= memory.alu;
             writeback.rdid <= memory.rdid;
                 
-            if(LdPC) PC <= next_pc;
+            if (LdPC) PC <= next_pc;
         end
     end
     
