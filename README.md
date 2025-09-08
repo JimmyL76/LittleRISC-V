@@ -72,6 +72,9 @@ To decide on the exact moment the current process is done executing, and stop fu
 
 Here, a HALT is implemented as just an address in the instruction memory with all 0's. Prior stages should begin getting valid bits set to 0 as soon as a HALT enters the decode stage. However, a branch/jump might still be in the later stages of the pipeline. This was solved using a `FinishCtr` that gets reset upon a jump back, but which also stops the processor once three finish signals are set in a row
 
+## Video Demo
+
+This [video](https://drive.google.com/file/d/1oCVr7mlt3CBNa0UVcwoZdZKpuwLAlaj_/view?usp=sharing) shows the synthesized version on Basys 3 FPGA with the basic `generate_add_test()` example from `testScript.py`. The LEDs show the lower 16 bits of the ALU.RS1 execute stage input data, and the display shows the lower 16 bits in hex of Register 1 (which was added to with 1, 2, 4, 8, then 10).
 
 ## Next Steps
 
