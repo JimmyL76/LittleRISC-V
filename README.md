@@ -51,7 +51,7 @@ This system would also benefit from a FIFO buffer that acts as a hardware queue 
 
 To optimize the power used by the system, there are many different techniques. To start, clock gating can be implemented to only provide clock edges to logic when actually needed. For instance, idle pipeline stages or functional units can all be disabled during inactive times to reduce dynamic power usage. This means that we only pass the dynamically changing clock signal through to certain stages or execution units when they are needed.
 
-In terms of the switching activity due to data flow through logic blocks, operand isolation can be used. This is the idea to block certain pieces of data from propagating through certain logic blocks/gates, such as with the ALU.
+In terms of the switching activity due to data flow through logic blocks, operand isolation can be used. This is the idea to block certain points of data from propagating through certain logic blocks/gates, such as with the ALU.
 
 Lastly, we can also gate power itself to certain areas of the hardware by partitioning into power islands and deciding which islands can be inactive during which operations. However, this may prove more difficult to directly control on FPGAs.
 
