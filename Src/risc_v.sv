@@ -22,9 +22,9 @@
 `define CONTROL_STORE_SIZE 20
 
 module risc_v(
-    input logic CLK, RST, Init,
-    input logic [31:0] InitPC, Init_Data,
-    input logic dBTNL, dBTNR, dBTNU, dBTND,
+    input logic CLK, RST,
+    // input logic dBTNL, dBTNR, dBTNU, dBTND,
+    input logic dBTNU,
     output logic I_CS, D_CS,
     output logic [3:0] I_WE, D_WE,
     output logic [31:0] I_ADDR, D_ADDR,
@@ -132,17 +132,15 @@ module risc_v(
     logic [31:0] PC;
 //    logic I_MemEN_result; // initialization?
     logic D_MemEN_result;
-    assign IMemR_W = Init; // 0 = R, 1 = W
     assign I_CS = 1; assign D_CS = D_MemEN_result; 
-    assign I_WE = (IMemR_W) ? 4'b1111 : 4'b0000; //drive memory bus only during writes
-    assign I_Mem_Bus = (IMemR_W) ? Init_Data : 32'bZ; // InitPC comes from UART controller
+    assign I_WE = 4'b0000; assign I_Mem_Bus = 32'bZ; // never drive instr mem from CPU
     assign D_Mem_Bus = (memory.contr.DMemR_W)? store_result : 32'bZ;
-    assign I_ADDR = (IMemR_W) ? InitPC[31:2] : PC[31:2]; 
+    assign I_ADDR = PC[31:2]; 
     assign D_ADDR = memory.alu[31:2];
     
     // DECODE LOGIC
     // control signals
-    opcode_t opcode; assign opcode = opcode_t'(decode.instr[6:0]);
+    opcode_t opcode; always_comb begin opcode = opcode_t'(decode.instr[6:0]); end
     logic [2:0] funct3; assign funct3 = decode.instr[14:12];
     logic [6:0] funct7; assign funct7 = decode.instr[31:25];
     

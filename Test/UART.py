@@ -9,6 +9,9 @@ import argparse
 CMD_WRITE = 0x57 # 87 = W
 CMD_READ = 0x52 # 82 = R 
 CMD_PING = 0x50 # 80 = P
+CMD_HALT = 0x48 # 72 = H
+CMD_GO = 0x47 # 71 = G
+ACK = 0x41 # 65 = A
 
 class UART:
     """Translates bit/hex values into serial UART for FPGA"""
@@ -36,21 +39,33 @@ class UART:
             self.ser.close()
             print(f"Serial port closed")
 
-    def ping(self):
-        """Send ping to test connection""" 
+    def send_command_only(self, cmd_byte):
+        """Sends a single byte command and waits for 'A' ack"""
         if not self.ser:
             print("Not connected")
             return False
-
+        
         try:
-            send = struct.pack('>B', CMD_PING)
+            send = struct.pack('>B', cmd_byte)
             self.ser.write(send) # write and read 1 byte
             response = self.ser.read(1)
-            # response bytes type vs int type, so first index into response 
-            return len(response) == 1 and response[0] == 0x41  # 65 = A
+            return len(response) == 1 and response[0] == ACK # 65 = A
         except Exception as e:
-            print(f"Error: Ping failed due to {e}")
+            print(f"Error: Failed due to {e}")
             return False    
+
+    def halt_cpu(self):
+        print("Halting CPU")
+        return self.send_command_only(CMD_HALT)
+
+    def release_cpu(self):
+        print("Releasing CPU")
+        return self.send_command_only(CMD_GO)
+
+    def ping(self):
+        """Send ping to test connection""" 
+        print("Sending ping")
+        return self.send_command_only(CMD_PING)
 
     def write_word(self, addr, data): 
         """Writes a 32-bit word to addr (big-endian), returns bool"""
@@ -65,7 +80,7 @@ class UART:
             self.ser.write(send)
             # wait for acknowledge
             response = self.ser.read(1)
-            success = len(response) == 1 and response[0] == 0x41  # 'A'
+            success = len(response) == 1 and response[0] == ACK # 'A'
             # don't leave this when actually running, slows program down:
             # if success: 
             #     print(f"Write successful: 0x{addr:08X} = 0x{data:08X}")
@@ -147,6 +162,41 @@ class UART:
 
         except Exception as e:
             print(f"Failed to load program due to {e}")
+            return False
+
+    def load_bin_file(self, filename, start_addr=0):
+        """Load instrs from binary file, returns bool"""
+
+        if not self.halt_cpu():
+            print("Could not halt CPU")
+            return False
+
+        instrs = []
+        try:
+            with open(filename, 'rb') as f:
+                content = f.read()
+                
+                # Iterate through the bytes in chunks of 4
+                for i in range(0, len(content), 4):
+                    chunk = content[i : i+4]
+                    
+                    # Only process full 4-byte words
+                    if len(chunk) == 4:
+                        # Unpack as Little Endian Unsigned Int (<I)
+                        val = struct.unpack('<I', chunk)[0]
+                        instrs.append(val)
+        
+            print(f"Loaded {len(instrs)} instrs from {filename}")
+            self.load_instrs(instrs, start_addr)
+
+        except Exception as e:
+            print(f"Failed to load program due to {e}")
+            return False
+        
+        if not self.release_cpu():
+            print("Could not release CPU")
+
+        return True
 
 # main function
 
@@ -164,7 +214,10 @@ def main():
 
     try: # if run into any errors, close file
         if args.load:
-            uart.load_hex_file(args.load, args.addr)
+            if args.load.endswith('.bin'):
+                uart.load_bin_file(args.load, args.addr)
+            else:
+                uart.load_hex_file(args.load, args.addr)
         else:
             print("No file to load")
         

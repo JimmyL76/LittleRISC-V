@@ -19,10 +19,31 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
+// // for fpga, separate clk lines cause timing issues, instead create 1-cycle enables
+// module fpga_clk_div #(
+//     parameter DIV
+//     )(
+//     input logic CLK, 
+//     output logic CLK_out
+//     );
+    
+//     logic [$clog2(DIV)-1:0] ctr = 0;
+    
+//     always_ff @(posedge CLK) begin
+//         if(ctr == DIV - 1)
+//             ctr <= 0;
+//         else 
+//             ctr <= ctr + 1;
+//     end
+    
+//     assign CLK_out = (ctr == DIV - 1);
+    
+// endmodule
+
 module clk_div #(
     parameter DIV
     )(
-    input logic CLK, RST, // ignore reset on clk_div for now
+    input logic CLK, // RST, // ignore reset on clk_div for now
     output logic CLK_out
     );
     

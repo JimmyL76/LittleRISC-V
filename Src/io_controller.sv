@@ -21,7 +21,7 @@
 
 
 module io_controller(
-    input logic clk100hz, clk1000hz, RST,
+    input logic clk100hz, clk1000hz, 
     input logic btnL, btnR, btnU, btnD,
     input logic [31:0] R_IO,
     output logic [6:0] seg,
