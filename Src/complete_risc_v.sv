@@ -39,7 +39,6 @@ module complete_risc_v(
     // basys 3 at 100 Mhz, 100_000_000 / 1_000_000 = 100hz
     // 100_000_000 / 100_000 = 1000hz
     logic clk100hz, clk1000hz, clk50Mhz;
-    logic clk100hz_internal, clk1000hz_internal, clk50Mhz_internal;
     `ifdef SIMULATION
         parameter div100hz = 2; 
         parameter div1000hz = 2;
@@ -49,14 +48,10 @@ module complete_risc_v(
         parameter div1000hz = 100_000;
         parameter div50Mhz = 2;
     `endif
-    clk_div #(.DIV(div100hz)) led_clk_div(CLK, clk100hz_internal); // led
+    clk_div #(.DIV(div100hz)) led_clk_div(CLK, clk100hz); // led
     // for debounce -> 100 hz = 10 ms should also be good
-    clk_div #(.DIV(div1000hz)) sseg_clk_div(CLK, clk1000hz_internal); // seven seg
-    clk_div #(.DIV(div50Mhz)) cpu_clk_div(CLK, clk50Mhz_internal); // cpu
-
-    BUFG clk_buf100hz (.I(clk100hz_internal), .O(clk100hz));
-    BUFG clk_buf1000hz (.I(clk1000hz_internal), .O(clk1000hz));
-    BUFG clk_buf50Mhz (.I(clk50Mhz_internal), .O(clk50Mhz));
+    clk_div #(.DIV(div1000hz)) sseg_clk_div(CLK, clk1000hz); // seven seg
+    clk_div #(.DIV(div50Mhz)) cpu_clk_div(CLK, clk50Mhz); // cpu
 
     logic [31:0] R_IO, R_led;
     logic dBTNL, dBTNR, dBTNU, dBTND;
@@ -86,10 +81,10 @@ module complete_risc_v(
     // logic Init; assign Init = 0; 
     // logic [31:0] InitPC, Init_Data; assign InitPC = 0; assign Init_Data = 0;
     
-    Memory #(0, 1) I_MEM (I_CS, CLK, I_WE, I_ADDR, I_Mem_Bus, debug_addr, debug_we, debug_data);
+    Memory #(1, 1) I_MEM (I_CS, CLK, I_WE, I_ADDR, I_Mem_Bus, debug_addr, debug_we, debug_data);
     Memory #(0, 0) D_MEM (D_CS, CLK, D_WE, D_ADDR, D_Mem_Bus, debug_addr, debug_we, debug_data);
     
-    risc_v CPU(.CLK(clk50Mhz), .*);
+    risc_v CPU(.CLK(clk100hz), .*);
     // dBTNR shows upper 16 bits of alu.rs1
     assign led = dBTNR ? R_led[31:16] : R_led[15:0];
     

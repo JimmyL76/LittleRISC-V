@@ -36,7 +36,7 @@ module debug_controller(
             state <= IDLE;
             mem_we <= 0;
             // tx_start <= 0;
-            cpu_reset_req <= 1; // begin cpu as halted (wait for instrs to be loaded)
+            cpu_reset_req <= 0; // TODO: begin cpu as halted (wait for instrs to be loaded)
             cmd_reg <= 0; addr_reg <= 0; data_reg <= 0;
         end else begin
             mem_we <= 0;
