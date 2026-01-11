@@ -20,8 +20,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module REG #(parameter int R_IO_NUM = 1)(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1, ReadReg2, R_IO);
+module REG #(parameter int R_IO_NUM = 1)(CLK, clk_cpu, LdR, RD, RS1, RS2, DataR, ReadReg1, ReadReg2, R_IO);
   input logic CLK;
+  input logic clk_cpu;
   input logic LdR;
   input logic [4:0] RD;
   input logic [4:0] RS1;
@@ -45,6 +46,7 @@ module REG #(parameter int R_IO_NUM = 1)(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1
 
   always @(negedge CLK)
   begin
+    if (clk_cpu) begin
     // hardware R0 to 0
     REG[0] <= 0;
 
@@ -54,5 +56,6 @@ module REG #(parameter int R_IO_NUM = 1)(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1
     ReadReg1 <= REG[RS1];
     ReadReg2 <= REG[RS2];
     R_IO <= REG[R_IO_NUM];
+    end
   end
 endmodule

@@ -22,7 +22,7 @@
 `define CONTROL_STORE_SIZE 20
 
 module risc_v(
-    input logic CLK, RST,
+    input logic CLK, clk_cpu, RST,
     // input logic dBTNL, dBTNR, dBTNU, dBTND,
     input logic dBTNU,
     output logic I_CS, D_CS,
@@ -126,7 +126,7 @@ module risc_v(
     // for reg
     logic [4:0] RS1, RS2; assign RS1 = decode.instr[19:15], RS2 = decode.instr[24:20];
     logic [4:0] RD; assign RD = decode.instr[11:7];
-    REG registers(CLK, LdR_W, writeback.rdid, RS1, RS2, DataR_W, ReadReg1, ReadReg2, R_IO);
+    REG registers(CLK, clk_cpu, LdR_W, writeback.rdid, RS1, RS2, DataR_W, ReadReg1, ReadReg2, R_IO);
                                               
     logic [31:0] store_result;
     logic [31:0] PC;
@@ -449,19 +449,23 @@ module risc_v(
         if (RST) 
             Pause <= 1;
         else 
+        if (clk_cpu) begin
             case (Pause)
                 0: Pause <= 2; // when Pause=0, only move forward one cycle
                 1: if (dBTNU) Pause <= 0; // when Pause=1, dBTNU=1 goes to 0
                 2: if (!dBTNU) Pause <= 1; // wait for dBTNU=0, brings back to 1
             endcase
+        end
     end
 
     // end when writeback instr is all 0s
     logic [1:0] Finish_Ctr;
     always_ff @(posedge CLK) begin
+        if (clk_cpu) begin
         // if last instr is a taken loop back, make sure to reset to 0 on !Finish
         if (RST || !Finish) Finish_Ctr = 0;
         else if (Finish_Ctr != 3) Finish_Ctr += 1;
+        end
     end
 
     always_ff @(posedge CLK) begin
@@ -475,6 +479,7 @@ module risc_v(
             memory.valid <= 0;
             writeback.valid <= 0;
         end else if ((!Pause) && (Finish_Ctr != 3)) begin
+        if (clk_cpu) begin
             // decode.load <= Ld_D; // use load value directly
             decode.valid <= V_D;
             // if d.valid is 0, e.valid is always 0, otherwise V_E will always be right
@@ -517,6 +522,7 @@ module risc_v(
             writeback.rdid <= memory.rdid;
                 
             if (LdPC) PC <= next_pc;
+        end
         end
     end
     

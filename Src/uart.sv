@@ -5,7 +5,7 @@ module uart #(
     parameter CLKS_PER_BIT = (CLK_FREQ / BAUD_RATE) // ~5208.33 cycles/baud, -1 for 0 index
     // decimal rounding is ok since timing is reset every byte
 )(
-    input logic CLK, RST,
+    input logic CLK, clk_cpu, RST,
     input logic rx_serial,
     output logic tx_serial,
     
@@ -16,9 +16,14 @@ module uart #(
     // TX interface
     input logic [7:0] tx_byte,
     input logic tx_start,
-    output logic tx_busy
+    output logic tx_busy,
+
+    // led debug
+    output logic [3:0] dbg_uart_state
 );
-    
+
+    assign dbg_uart_state = {tx_state, rx_state};
+
     // RX logic
     typedef enum logic [1:0] {RX_IDLE, RX_START, RX_DATA, RX_STOP} rx_state_t;
     rx_state_t rx_state;
@@ -33,13 +38,18 @@ module uart #(
             rx_timer <= 0;
             rx_byte <= 0;
         end else begin
+            if (clk_cpu) begin
             rx_valid <= 0; // default
             case (rx_state)
                 RX_IDLE: begin
                     if (rx_serial == 0) begin // start bit
-                        rx_state <= RX_START;
-                        rx_timer <= (CLKS_PER_BIT-1) / 2; // capture on middle of bit - ~2600 cycles
-                    end
+                        rx_timer <= rx_timer + 1; // add additional timer to handle electrical noise
+                        if (rx_timer == 10) begin
+                            rx_state <= RX_START;
+                            rx_timer <= (CLKS_PER_BIT-1) / 2; // capture on middle of bit - ~2600 cycles
+                            // adjust middle if add noise timer gets too long
+                        end
+                    end else rx_timer <= 0;
                 end
                 RX_START: begin
                     if (rx_timer == 0) begin
@@ -63,6 +73,7 @@ module uart #(
                     end else rx_timer <= rx_timer - 1;
                 end
             endcase
+            end
         end
     end
 
@@ -83,6 +94,7 @@ module uart #(
             tx_state <= TX_IDLE;
             tx_timer <= 0;
         end else begin
+            if (clk_cpu) begin
             case (tx_state)
                 TX_IDLE: begin
                     if (tx_start) begin
@@ -112,6 +124,7 @@ module uart #(
                     end else tx_timer <= tx_timer - 1;
                 end
             endcase
+            end
         end
     end
 endmodule

@@ -21,7 +21,7 @@
 
 
 module io_controller(
-    input logic clk100hz, clk1000hz, 
+    input logic CLK, clk_led, clk_sseg, 
     input logic btnL, btnR, btnU, btnD,
     input logic [31:0] R_IO,
     output logic [6:0] seg,
@@ -29,17 +29,17 @@ module io_controller(
     output logic dBTNL, dBTNR, dBTNU, dBTND
     );
     
-    button_debounce left(.CLK(clk100hz), .btn_in(btnL), .btn_out(dBTNL));
-    button_debounce right(.CLK(clk100hz), .btn_in(btnR), .btn_out(dBTNR));
-    button_debounce up(.CLK(clk100hz), .btn_in(btnU), .btn_out(dBTNU));
-    button_debounce down(.CLK(clk100hz), .btn_in(btnD), .btn_out(dBTND));
+    button_debounce left(.CLK(CLK), .clk_led(clk_led), .btn_in(btnL), .btn_out(dBTNL));
+    button_debounce right(.CLK(CLK), .clk_led(clk_led), .btn_in(btnR), .btn_out(dBTNR));
+    button_debounce up(.CLK(CLK), .clk_led(clk_led), .btn_in(btnU), .btn_out(dBTNU));
+    button_debounce down(.CLK(CLK), .clk_led(clk_led), .btn_in(btnD), .btn_out(dBTND));
     
-    sevenSeg disp(.CLK(clk1000hz), .*);
+    sevenSeg disp(.*);
     
 endmodule
 
 module sevenSeg (
-    input logic CLK, dBTNL,
+    input logic CLK, clk_sseg, dBTNL,
     input logic [31:0] R_IO,
     output logic [6:0] seg,
     output logic [3:0] an
@@ -50,13 +50,15 @@ module sevenSeg (
     
     always @(posedge CLK) begin
         // R_IO_ff <= R_IO;
+        if (clk_sseg) begin
         case(an)
             4'b1110: an <= 4'b1101;
             4'b1101: an <= 4'b1011;
             4'b1011: an <= 4'b0111;
             4'b0111: an <= 4'b1110;
             default: an <= 4'b1110;
-        endcase   
+        endcase  
+        end
     end
     
     // dBTNL shows upper 4 hex digits of register
@@ -87,14 +89,16 @@ module sevenSeg (
 endmodule
 
 module button_debounce(
-    input logic CLK, btn_in,
+    input logic CLK, clk_led, btn_in,
     output logic btn_out
     );
     
     logic [1:0] B_de;
     
     always@(posedge CLK) begin
+        if (clk_led) begin
         {B_de} <= {B_de[0], btn_in};
+        end
     end
     
     assign btn_out = B_de[1];

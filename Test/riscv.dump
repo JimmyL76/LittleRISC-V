@@ -1,0 +1,499 @@
+
+riscv.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+.global _start
+
+_start:
+    # set sp to top of memory
+    # FPGA mem is 32KB with 4K words, stack is in bytes so still 32K
+    li sp, 0x00008000 
+   0:	00008137          	lui	sp,0x8
+
+    call main
+   4:	008000ef          	jal	c <main>
+
+00000008 <_park>:
+
+    # 3. if main ever returns, stay in an infinite loop
+_park:
+    j _park
+   8:	0000006f          	j	8 <_park>
+
+0000000c <main>:
+
+int main() {
+   c:	ff010113          	addi	sp,sp,-16 # 7ff0 <main+0x7fe4>
+  10:	00812623          	sw	s0,12(sp)
+  14:	01010413          	addi	s0,sp,16
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	00000093          	li	ra,0
+
+    while(1) {
+        __asm__ volatile ("addi x1, x1, 1");
+  1c:	00108093          	addi	ra,ra,1
+  20:	ffdff06f          	j	1c <main+0x10>
+
+Disassembly of section .riscv.attributes:
+
+00000000 <.riscv.attributes>:
+    li sp, 0x00008000 
+   0:	1b41                	.insn	2, 0x1b41
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	7200                	.insn	2, 0x7200
+   6:	7369                	.insn	2, 0x7369
+    j _park
+   8:	01007663          	bgeu	zero,a6,14 <main+0x8>
+int main() {
+   c:	0011                	.insn	2, 0x0011
+   e:	0000                	.insn	2, 0x
+  10:	1004                	.insn	2, 0x1004
+  12:	7205                	.insn	2, 0x7205
+  14:	3376                	.insn	2, 0x3376
+  16:	6932                	.insn	2, 0x6932
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	7032                	.insn	2, 0x7032
+  1a:	0031                	.insn	2, 0x0031
+
+Disassembly of section .comment:
+
+00000000 <.comment>:
+    li sp, 0x00008000 
+   0:	3a434347          	.insn	4, 0x3a434347
+    call main
+   4:	2820                	.insn	2, 0x2820
+   6:	3331                	.insn	2, 0x3331
+    j _park
+   8:	322e                	.insn	2, 0x322e
+   a:	302e                	.insn	2, 0x302e
+int main() {
+   c:	312d                	.insn	2, 0x312d
+   e:	7531                	.insn	2, 0x7531
+  10:	7562                	.insn	2, 0x7562
+  12:	746e                	.insn	2, 0x746e
+  14:	3175                	.insn	2, 0x3175
+  16:	2932312b          	.insn	4, 0x2932312b
+    __asm__ volatile ("addi x1, x0, 0");
+  1a:	3120                	.insn	2, 0x3120
+        __asm__ volatile ("addi x1, x1, 1");
+  1c:	2e322e33          	.insn	4, 0x2e322e33
+  20:	0030                	.insn	2, 0x0030
+
+Disassembly of section .debug_line:
+
+00000000 <.debug_line>:
+    li sp, 0x00008000 
+   0:	004c                	.insn	2, 0x004c
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	0005                	.insn	2, 0x0005
+   6:	0004                	.insn	2, 0x0004
+    j _park
+   8:	002a                	.insn	2, 0x002a
+   a:	0000                	.insn	2, 0x
+int main() {
+   c:	0101                	.insn	2, 0x0101
+   e:	fb01                	.insn	2, 0xfb01
+  10:	0d0e                	.insn	2, 0x0d0e
+  12:	0100                	.insn	2, 0x0100
+  14:	0101                	.insn	2, 0x0101
+  16:	0001                	.insn	2, 0x0001
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	0000                	.insn	2, 0x
+  1a:	0001                	.insn	2, 0x0001
+        __asm__ volatile ("addi x1, x1, 1");
+  1c:	0100                	.insn	2, 0x0100
+  1e:	0101                	.insn	2, 0x0101
+  20:	011f 0000 0000      	.insn	6, 0x011f
+  26:	0102                	.insn	2, 0x0102
+  28:	021f 020f 007f      	.insn	6, 0x007f020f021f
+  2e:	0000                	.insn	2, 0x
+  30:	7f00                	.insn	2, 0x7f00
+  32:	0000                	.insn	2, 0x
+  34:	0000                	.insn	2, 0x
+  36:	0500                	.insn	2, 0x0500
+  38:	0002                	.insn	2, 0x0002
+  3a:	0000                	.insn	2, 0x
+  3c:	1800                	.insn	2, 0x1800
+  3e:	04090203          	lb	tp,64(s2)
+  42:	0100                	.insn	2, 0x0100
+  44:	04090403          	lb	s0,64(s2)
+  48:	0100                	.insn	2, 0x0100
+  4a:	0409                	.insn	2, 0x0409
+  4c:	0000                	.insn	2, 0x
+  4e:	0101                	.insn	2, 0x0101
+  50:	005d                	.insn	2, 0x005d
+  52:	0000                	.insn	2, 0x
+  54:	0005                	.insn	2, 0x0005
+  56:	0004                	.insn	2, 0x0004
+  58:	002a                	.insn	2, 0x002a
+  5a:	0000                	.insn	2, 0x
+  5c:	0101                	.insn	2, 0x0101
+  5e:	fb01                	.insn	2, 0xfb01
+  60:	0d0e                	.insn	2, 0x0d0e
+  62:	0100                	.insn	2, 0x0100
+  64:	0101                	.insn	2, 0x0101
+  66:	0001                	.insn	2, 0x0001
+  68:	0000                	.insn	2, 0x
+  6a:	0001                	.insn	2, 0x0001
+  6c:	0100                	.insn	2, 0x0100
+  6e:	0101                	.insn	2, 0x0101
+  70:	011f 0000 0000      	.insn	6, 0x011f
+  76:	0102                	.insn	2, 0x0102
+  78:	021f 020f 0087      	.insn	6, 0x0087020f021f
+  7e:	0000                	.insn	2, 0x
+  80:	8700                	.insn	2, 0x8700
+  82:	0000                	.insn	2, 0x
+  84:	0000                	.insn	2, 0x
+  86:	0c05                	.insn	2, 0x0c05
+  88:	0500                	.insn	2, 0x0500
+  8a:	0c02                	.insn	2, 0x0c02
+  8c:	0000                	.insn	2, 0x
+  8e:	1300                	.insn	2, 0x1300
+  90:	0505                	.insn	2, 0x0505
+  92:	0c090103          	lb	sp,192(s2)
+  96:	0100                	.insn	2, 0x0100
+  98:	0905                	.insn	2, 0x0905
+  9a:	0200                	.insn	2, 0x0200
+  9c:	0104                	.insn	2, 0x0104
+  9e:	04090303          	lb	t1,64(s2)
+  a2:	0100                	.insn	2, 0x0100
+  a4:	0306                	.insn	2, 0x0306
+  a6:	0900                	.insn	2, 0x0900
+  a8:	0004                	.insn	2, 0x0004
+  aa:	0901                	.insn	2, 0x0901
+  ac:	0004                	.insn	2, 0x0004
+  ae:	0100                	.insn	2, 0x0100
+  b0:	Address 0xb0 is out of bounds.
+
+
+Disassembly of section .debug_line_str:
+
+00000000 <.debug_line_str>:
+    li sp, 0x00008000 
+   0:	746e6d2f          	.insn	4, 0x746e6d2f
+    call main
+   4:	4f2f672f          	.insn	4, 0x4f2f672f
+    j _park
+   8:	656e                	.insn	2, 0x656e
+   a:	7244                	.insn	2, 0x7244
+int main() {
+   c:	7669                	.insn	2, 0x7669
+   e:	2065                	.insn	2, 0x2065
+  10:	202d                	.insn	2, 0x202d
+  12:	6854                	.insn	2, 0x6854
+  14:	2065                	.insn	2, 0x2065
+  16:	6e55                	.insn	2, 0x6e55
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	7669                	.insn	2, 0x7669
+  1a:	7265                	.insn	2, 0x7265
+        __asm__ volatile ("addi x1, x1, 1");
+  1c:	79746973          	.insn	4, 0x79746973
+  20:	6f20                	.insn	2, 0x6f20
+  22:	2066                	.insn	2, 0x2066
+  24:	6554                	.insn	2, 0x6554
+  26:	6178                	.insn	2, 0x6178
+  28:	74612073          	.insn	4, 0x74612073
+  2c:	4120                	.insn	2, 0x4120
+  2e:	7375                	.insn	2, 0x7375
+  30:	6974                	.insn	2, 0x6974
+  32:	2f6e                	.insn	2, 0x2f6e
+  34:	3030                	.insn	2, 0x3030
+  36:	2d20                	.insn	2, 0x2d20
+  38:	5520                	.insn	2, 0x5520
+  3a:	2054                	.insn	2, 0x2054
+  3c:	7541                	.insn	2, 0x7541
+  3e:	6e697473          	.insn	4, 0x6e697473
+  42:	6f72502f          	.insn	4, 0x6f72502f
+  46:	6566                	.insn	2, 0x6566
+  48:	6f697373          	.insn	4, 0x6f697373
+  4c:	616e                	.insn	2, 0x616e
+  4e:	2f6c                	.insn	2, 0x2f6c
+  50:	6556                	.insn	2, 0x6556
+  52:	6972                	.insn	2, 0x6972
+  54:	6f6c                	.insn	2, 0x6f6c
+  56:	68542067          	.insn	4, 0x68542067
+  5a:	6e69                	.insn	2, 0x6e69
+  5c:	6c2f7367          	.insn	4, 0x6c2f7367
+  60:	7469                	.insn	2, 0x7469
+  62:	6c74                	.insn	2, 0x6c74
+  64:	2d65                	.insn	2, 0x2d65
+  66:	4952                	.insn	2, 0x4952
+  68:	562d4353          	.insn	4, 0x562d4353
+  6c:	74694c2f          	.insn	4, 0x74694c2f
+  70:	6c74                	.insn	2, 0x6c74
+  72:	5265                	.insn	2, 0x5265
+  74:	5349                	.insn	2, 0x5349
+  76:	2f562d43          	.insn	4, 0x2f562d43
+  7a:	6554                	.insn	2, 0x6554
+  7c:	73007473          	.insn	4, 0x73007473
+  80:	6174                	.insn	2, 0x6174
+  82:	7472                	.insn	2, 0x7472
+  84:	732e                	.insn	2, 0x732e
+  86:	6d00                	.insn	2, 0x6d00
+  88:	6961                	.insn	2, 0x6961
+  8a:	2e6e                	.insn	2, 0x2e6e
+  8c:	Address 0x8c is out of bounds.
+
+
+Disassembly of section .debug_info:
+
+00000000 <.debug_info>:
+    li sp, 0x00008000 
+   0:	0020                	.insn	2, 0x0020
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	0005                	.insn	2, 0x0005
+   6:	0401                	.insn	2, 0x0401
+    j _park
+   8:	0000                	.insn	2, 0x
+   a:	0000                	.insn	2, 0x
+int main() {
+   c:	0001                	.insn	2, 0x0001
+   e:	0000                	.insn	2, 0x
+  10:	0000                	.insn	2, 0x
+  12:	0000                	.insn	2, 0x
+  14:	1000                	.insn	2, 0x1000
+  16:	0000                	.insn	2, 0x
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	0000                	.insn	2, 0x
+  1a:	0008                	.insn	2, 0x0008
+        __asm__ volatile ("addi x1, x1, 1");
+  1c:	0000                	.insn	2, 0x
+  1e:	00000087          	.insn	4, 0x0087
+  22:	8001                	.insn	2, 0x8001
+  24:	0040                	.insn	2, 0x0040
+  26:	0000                	.insn	2, 0x
+  28:	0005                	.insn	2, 0x0005
+  2a:	0401                	.insn	2, 0x0401
+  2c:	0014                	.insn	2, 0x0014
+  2e:	0000                	.insn	2, 0x
+  30:	9301                	.insn	2, 0x9301
+  32:	0000                	.insn	2, 0x
+  34:	1d00                	.insn	2, 0x1d00
+  36:	00000087          	.insn	4, 0x0087
+  3a:	0000                	.insn	2, 0x
+  3c:	0000                	.insn	2, 0x
+  3e:	000c                	.insn	2, 0x000c
+  40:	0000                	.insn	2, 0x
+  42:	0018                	.insn	2, 0x0018
+  44:	0000                	.insn	2, 0x
+  46:	0050                	.insn	2, 0x0050
+  48:	0000                	.insn	2, 0x
+  4a:	d602                	.insn	2, 0xd602
+  4c:	0000                	.insn	2, 0x
+  4e:	0100                	.insn	2, 0x0100
+  50:	0502                	.insn	2, 0x0502
+  52:	003c                	.insn	2, 0x003c
+  54:	0000                	.insn	2, 0x
+  56:	000c                	.insn	2, 0x000c
+  58:	0000                	.insn	2, 0x
+  5a:	0018                	.insn	2, 0x0018
+  5c:	0000                	.insn	2, 0x
+  5e:	9c01                	.insn	2, 0x9c01
+  60:	69050403          	lb	s0,1680(a0)
+  64:	746e                	.insn	2, 0x746e
+	...
+
+Disassembly of section .debug_abbrev:
+
+00000000 <.debug_abbrev>:
+    li sp, 0x00008000 
+   0:	1101                	.insn	2, 0x1101
+   2:	1000                	.insn	2, 0x1000
+    call main
+   4:	12011117          	auipc	sp,0x12011
+    j _park
+   8:	1b0e030f          	.insn	4, 0x1b0e030f
+int main() {
+   c:	250e                	.insn	2, 0x250e
+   e:	130e                	.insn	2, 0x130e
+  10:	0005                	.insn	2, 0x0005
+  12:	0000                	.insn	2, 0x
+  14:	1101                	.insn	2, 0x1101
+  16:	2501                	.insn	2, 0x2501
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	130e                	.insn	2, 0x130e
+  1a:	1b1f030b          	.insn	4, 0x1b1f030b
+        __asm__ volatile ("addi x1, x1, 1");
+  1e:	111f 1201 1006      	.insn	6, 0x10061201111f
+  24:	02000017          	auipc	zero,0x2000
+  28:	002e                	.insn	2, 0x002e
+  2a:	0e03193f 0b3b0b3a 	.insn	8, 0x0b3b0b3a0e03193f
+  32:	0b39                	.insn	2, 0x0b39
+  34:	1349                	.insn	2, 0x1349
+  36:	0111                	.insn	2, 0x0111
+  38:	0612                	.insn	2, 0x0612
+  3a:	1840                	.insn	2, 0x1840
+  3c:	197a                	.insn	2, 0x197a
+  3e:	0000                	.insn	2, 0x
+  40:	0b002403          	lw	s0,176(zero) # b0 <main+0xa4>
+  44:	030b3e0b          	.insn	4, 0x030b3e0b
+  48:	0008                	.insn	2, 0x0008
+	...
+
+Disassembly of section .debug_aranges:
+
+00000000 <.debug_aranges>:
+    li sp, 0x00008000 
+   0:	001c                	.insn	2, 0x001c
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	0002                	.insn	2, 0x0002
+   6:	0000                	.insn	2, 0x
+    j _park
+   8:	0000                	.insn	2, 0x
+   a:	0004                	.insn	2, 0x0004
+	...
+int main() {
+  14:	000c                	.insn	2, 0x000c
+	...
+        __asm__ volatile ("addi x1, x1, 1");
+  1e:	0000                	.insn	2, 0x
+  20:	001c                	.insn	2, 0x001c
+  22:	0000                	.insn	2, 0x
+  24:	0002                	.insn	2, 0x0002
+  26:	0024                	.insn	2, 0x0024
+  28:	0000                	.insn	2, 0x
+  2a:	0004                	.insn	2, 0x0004
+  2c:	0000                	.insn	2, 0x
+  2e:	0000                	.insn	2, 0x
+  30:	000c                	.insn	2, 0x000c
+  32:	0000                	.insn	2, 0x
+  34:	0018                	.insn	2, 0x0018
+	...
+
+Disassembly of section .debug_str:
+
+00000000 <.debug_str>:
+    li sp, 0x00008000 
+   0:	72617473          	.insn	4, 0x72617473
+    call main
+   4:	2e74                	.insn	2, 0x2e74
+   6:	6d2f0073          	.insn	4, 0x6d2f0073
+    j _park
+   a:	746e                	.insn	2, 0x746e
+int main() {
+   c:	4f2f672f          	.insn	4, 0x4f2f672f
+  10:	656e                	.insn	2, 0x656e
+  12:	7244                	.insn	2, 0x7244
+  14:	7669                	.insn	2, 0x7669
+  16:	2065                	.insn	2, 0x2065
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	202d                	.insn	2, 0x202d
+  1a:	6854                	.insn	2, 0x6854
+        __asm__ volatile ("addi x1, x1, 1");
+  1c:	2065                	.insn	2, 0x2065
+  1e:	6e55                	.insn	2, 0x6e55
+  20:	7669                	.insn	2, 0x7669
+  22:	7265                	.insn	2, 0x7265
+  24:	79746973          	.insn	4, 0x79746973
+  28:	6f20                	.insn	2, 0x6f20
+  2a:	2066                	.insn	2, 0x2066
+  2c:	6554                	.insn	2, 0x6554
+  2e:	6178                	.insn	2, 0x6178
+  30:	74612073          	.insn	4, 0x74612073
+  34:	4120                	.insn	2, 0x4120
+  36:	7375                	.insn	2, 0x7375
+  38:	6974                	.insn	2, 0x6974
+  3a:	2f6e                	.insn	2, 0x2f6e
+  3c:	3030                	.insn	2, 0x3030
+  3e:	2d20                	.insn	2, 0x2d20
+  40:	5520                	.insn	2, 0x5520
+  42:	2054                	.insn	2, 0x2054
+  44:	7541                	.insn	2, 0x7541
+  46:	6e697473          	.insn	4, 0x6e697473
+  4a:	6f72502f          	.insn	4, 0x6f72502f
+  4e:	6566                	.insn	2, 0x6566
+  50:	6f697373          	.insn	4, 0x6f697373
+  54:	616e                	.insn	2, 0x616e
+  56:	2f6c                	.insn	2, 0x2f6c
+  58:	6556                	.insn	2, 0x6556
+  5a:	6972                	.insn	2, 0x6972
+  5c:	6f6c                	.insn	2, 0x6f6c
+  5e:	68542067          	.insn	4, 0x68542067
+  62:	6e69                	.insn	2, 0x6e69
+  64:	6c2f7367          	.insn	4, 0x6c2f7367
+  68:	7469                	.insn	2, 0x7469
+  6a:	6c74                	.insn	2, 0x6c74
+  6c:	2d65                	.insn	2, 0x2d65
+  6e:	4952                	.insn	2, 0x4952
+  70:	562d4353          	.insn	4, 0x562d4353
+  74:	74694c2f          	.insn	4, 0x74694c2f
+  78:	6c74                	.insn	2, 0x6c74
+  7a:	5265                	.insn	2, 0x5265
+  7c:	5349                	.insn	2, 0x5349
+  7e:	2f562d43          	.insn	4, 0x2f562d43
+  82:	6554                	.insn	2, 0x6554
+  84:	47007473          	.insn	4, 0x47007473
+  88:	554e                	.insn	2, 0x554e
+  8a:	4120                	.insn	2, 0x4120
+  8c:	2e322053          	.insn	4, 0x2e322053
+  90:	3234                	.insn	2, 0x3234
+  92:	4700                	.insn	2, 0x4700
+  94:	554e                	.insn	2, 0x554e
+  96:	4320                	.insn	2, 0x4320
+  98:	3731                	.insn	2, 0x3731
+  9a:	3120                	.insn	2, 0x3120
+  9c:	2e322e33          	.insn	4, 0x2e322e33
+  a0:	2030                	.insn	2, 0x2030
+  a2:	6d2d                	.insn	2, 0x6d2d
+  a4:	6261                	.insn	2, 0x6261
+  a6:	3d69                	.insn	2, 0x3d69
+  a8:	6c69                	.insn	2, 0x6c69
+  aa:	3370                	.insn	2, 0x3370
+  ac:	2032                	.insn	2, 0x2032
+  ae:	6d2d                	.insn	2, 0x6d2d
+  b0:	7369                	.insn	2, 0x7369
+  b2:	2d61                	.insn	2, 0x2d61
+  b4:	63657073          	.insn	4, 0x63657073
+  b8:	323d                	.insn	2, 0x323d
+  ba:	3130                	.insn	2, 0x3130
+  bc:	3139                	.insn	2, 0x3139
+  be:	3132                	.insn	2, 0x3132
+  c0:	6d2d2033          	.insn	4, 0x6d2d2033
+  c4:	7261                	.insn	2, 0x7261
+  c6:	723d6863          	bltu	s10,gp,7f6 <main+0x7ea>
+  ca:	3376                	.insn	2, 0x3376
+  cc:	6932                	.insn	2, 0x6932
+  ce:	2d20                	.insn	2, 0x2d20
+  d0:	4f2d2067          	.insn	4, 0x4f2d2067
+  d4:	0030                	.insn	2, 0x0030
+  d6:	616d                	.insn	2, 0x616d
+  d8:	6e69                	.insn	2, 0x6e69
+	...
+
+Disassembly of section .debug_frame:
+
+00000000 <.debug_frame>:
+    li sp, 0x00008000 
+   0:	000c                	.insn	2, 0x000c
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	ffff                	.insn	2, 0xffff
+   6:	ffff                	.insn	2, 0xffff
+    j _park
+   8:	7c010003          	lb	zero,1984(sp) # 120117c4 <main+0x120117b8>
+int main() {
+   c:	0d01                	.insn	2, 0x0d01
+   e:	0002                	.insn	2, 0x0002
+  10:	0018                	.insn	2, 0x0018
+  12:	0000                	.insn	2, 0x
+  14:	0000                	.insn	2, 0x
+  16:	0000                	.insn	2, 0x
+    __asm__ volatile ("addi x1, x0, 0");
+  18:	000c                	.insn	2, 0x000c
+  1a:	0000                	.insn	2, 0x
+        __asm__ volatile ("addi x1, x1, 1");
+  1c:	0018                	.insn	2, 0x0018
+  1e:	0000                	.insn	2, 0x
+  20:	0e44                	.insn	2, 0x0e44
+  22:	4410                	.insn	2, 0x4410
+  24:	0188                	.insn	2, 0x0188
+  26:	0c44                	.insn	2, 0x0c44
+  28:	0008                	.insn	2, 0x0008
+	...

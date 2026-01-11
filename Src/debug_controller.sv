@@ -1,5 +1,5 @@
 module debug_controller(
-    input logic CLK, RST,
+    input logic CLK, clk_cpu, RST,
     
     // UART external pins
     input logic rx_serial,
@@ -10,7 +10,10 @@ module debug_controller(
     output logic mem_we,
     inout wire [31:0] mem_data,
 
-    output logic cpu_reset_req
+    output logic cpu_reset_req,
+
+    // debug
+    output logic [7:0] dbg_state
 );
 
     logic [7:0] rx_byte, tx_byte;
@@ -20,6 +23,9 @@ module debug_controller(
 
     typedef enum logic [3:0] {IDLE, GET_ADDR, GET_DATA, EXEC_READ, EXEC_WRITE, SEND_ACK, SEND_DATA} state_t;
     state_t state;
+    
+    logic [3:0] dbg_uart_state;
+    assign dbg_state = {state, dbg_uart_state};
 
     logic [7:0] cmd_reg;
     logic [31:0] addr_reg;
@@ -36,9 +42,10 @@ module debug_controller(
             state <= IDLE;
             mem_we <= 0;
             // tx_start <= 0;
-            cpu_reset_req <= 0; // TODO: begin cpu as halted (wait for instrs to be loaded)
+            cpu_reset_req <= 1; // begin cpu as halted (wait for instrs to be loaded)
             cmd_reg <= 0; addr_reg <= 0; data_reg <= 0;
         end else begin
+            if (clk_cpu) begin
             mem_we <= 0;
             // tx_start <= 0;
 
@@ -112,6 +119,7 @@ module debug_controller(
                     end
                 end
             endcase
+            end
         end
     end
 endmodule
