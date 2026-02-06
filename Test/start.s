@@ -4,7 +4,7 @@
 _start:
     # set sp to top of memory
     # FPGA mem is 32KB with 4K words, stack is in bytes so still 32K
-    li sp, 0x00008000 
+    li sp, 0x00008000
 
     call main
 

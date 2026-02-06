@@ -4,16 +4,17 @@ module uart_tb();
     logic CLK; 
     // U = step forward, L = show upper led bits, R = show upper disp bits
     logic btnL, btnR, btnU, btnD;
-    logic sw; // reset switch tied to RST
-    logic rx;
+    logic [2:0] sw; // reset switch tied to RST
+    logic rx_external;
     
-    logic tx;
+    logic tx_external;
     logic [15:0] led; // taps alu.rs1
-    logic [6:0] seg; // displays REG[1]
+    logic [6:0] sseg; // displays REG[1]
     logic [3:0] an;
 
     assign btnL = 0; assign btnR = 0; assign btnU = 0; assign btnD = 0; 
-    logic RST; assign sw = RST;
+    logic RST; assign sw[0] = RST;
+    assign sw[2:1] = 0;
 
     complete_risc_v dut(.*);
 // module complete_risc_v(
@@ -33,7 +34,7 @@ module uart_tb();
 
     initial begin
         CLK = 0;
-        forever #10 CLK = ~CLK;
+        forever #5 CLK = ~CLK; //* 100Mhz clock now instead of 50
     end
 
     localparam CMD_WRITE = 8'h57; // 'W'
@@ -50,13 +51,13 @@ module uart_tb();
     task uart_send_byte(input [7:0] data);
         int i;
         begin
-            rx = 0; 
+            rx_external = 0; 
             #(NS_PER_BIT);
             for (i=0; i<8; i=i+1) begin
-                rx = data[i];
+                rx_external = data[i];
                 #(NS_PER_BIT);
             end
-            rx = 1;
+            rx_external = 1;
             #(NS_PER_BIT);
         end
     endtask
@@ -73,11 +74,11 @@ module uart_tb();
     task uart_receive_byte(output [7:0] data);
         int i;
         begin
-            @(negedge tx);
+            @(negedge tx_external);
             #(NS_PER_BIT + (NS_PER_BIT/2));
             
             for (i=0; i<8; i=i+1) begin
-                data[i] = tx;
+                data[i] = tx_external;
                 #(NS_PER_BIT);
             end
         end
@@ -221,7 +222,7 @@ module uart_tb();
         logic [7:0] tx_byte;
         $display("\n[TASK] Running CPU for %0d cycles", cycles_to_run);
         
-        uart_send_byte(CMD_GO);
+        uart_send_byte(CMD_GO); force dut.CPU.GO = 1; //* need both now for go (no single step)
         uart_receive_byte(tx_byte);
         
         #(cycles_to_run * 20); // 20ns clock period
@@ -251,20 +252,21 @@ module uart_tb();
     // dump registers - not UART controlled
     task test_dump_regs(input int num_regs);
         int i;
-        $display("\n[TASK] Dumping CPU Registers:");
+        $display("\n[TASK] Dumping CPU Resgisters:");
         for (i = 0; i < num_regs; i++) begin
             $display("REG[%0d] = %h", i, dut.CPU.registers.REG[i]);
         end
     endtask
 
-    defparam dut.UART_ctrl.uart_transceiver.CLKS_PER_BIT = 5; // force 5 cycles/bit in uart
+    defparam dut.uart_transceiver.CLKS_PER_BIT = 5; // force 5 cycles/bit in uart
+    defparam dut.uart_transceiver.NOISE_RX_TIMER = 0; // force no electrical noise wait in uart
 
     logic [7:0] ping_byte;
     logic [31:0] instrs [];
 
     initial begin
         // $display("CLKS_PER_BIT=%0d", dut.UART_ctrl.uart_transceiver.CLKS_PER_BIT);
-        RST = 1; rx = 1; force dut.CPU.Pause = 0; // don't single step
+        RST = 1; rx_external = 1; force dut.CPU.GO = 0; //* changed to go instead of Pause=0
         #100; RST = 0; #100;
 
         uart_send_byte(CMD_PING);
@@ -294,7 +296,7 @@ module uart_tb();
         test_load_program(instrs);
 
         test_cpu_run(1000);
-        test_dump_regs(4);
+        test_dump_regs(4); // x00, x19, x02, x1b
 
         test_dump_mem(0, instrs.size());
 

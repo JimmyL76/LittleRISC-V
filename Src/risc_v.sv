@@ -21,10 +21,9 @@
 
 `define CONTROL_STORE_SIZE 20
 
-module risc_v(
+module risc_v #(parameter STEP_SIZE = 10)(
     input logic CLK, clk_cpu, RST,
-    // input logic dBTNL, dBTNR, dBTNU, dBTND,
-    input logic dBTNU,
+    input logic dBTNU, GO, STEPx10,
     output logic I_CS, D_CS,
     output logic [3:0] I_WE, D_WE,
     output logic [31:0] I_ADDR, D_ADDR,
@@ -126,21 +125,27 @@ module risc_v(
     // for reg
     logic [4:0] RS1, RS2; assign RS1 = decode.instr[19:15], RS2 = decode.instr[24:20];
     logic [4:0] RD; assign RD = decode.instr[11:7];
-    REG registers(CLK, clk_cpu, LdR_W, writeback.rdid, RS1, RS2, DataR_W, ReadReg1, ReadReg2, R_IO);
+    REG registers(CLK, LdR_W, writeback.rdid, RS1, RS2, DataR_W, ReadReg1, ReadReg2, R_IO);
                                               
     logic [31:0] store_result;
     logic [31:0] PC;
 //    logic I_MemEN_result; // initialization?
+    logic in_d_range; assign in_d_range = (memory.alu[15:14] == 2'b01); // check only for data mem space
     logic D_MemEN_result;
     assign I_CS = 1; assign D_CS = D_MemEN_result; 
     assign I_WE = 4'b0000; assign I_Mem_Bus = 32'bZ; // never drive instr mem from CPU
     assign D_Mem_Bus = (memory.contr.DMemR_W)? store_result : 32'bZ;
-    assign I_ADDR = PC[31:2]; 
-    assign D_ADDR = memory.alu[31:2];
+    assign I_ADDR = PC; //* changed [13:2] for D_ADDR and not I_ADDR
+    assign D_ADDR = memory.alu; 
+    // moved to mem module: [13:2] wraps around every 16KB for d_mem starting at addr 0 = 0x00004000
     
     // DECODE LOGIC
     // control signals
-    opcode_t opcode; always_comb begin opcode = opcode_t'(decode.instr[6:0]); end
+    opcode_t opcode; 
+    always_comb begin 
+        opcode = opcode_t'(decode.instr[6:0]); 
+        // $monitor("Time=%0t | opcode = %p", $time, opcode); 
+    end
     logic [2:0] funct3; assign funct3 = decode.instr[14:12];
     logic [6:0] funct7; assign funct7 = decode.instr[31:25];
     
@@ -241,7 +246,10 @@ module risc_v(
         else begin
             case(execute.contr.BR) 
                 0: PCMux_E = ($signed(execute.rs1) == $signed(execute.rs2));
-                1: PCMux_E = ($signed(execute.rs1) != $signed(execute.rs2));
+                1: begin 
+                    PCMux_E = ($signed(execute.rs1) != $signed(execute.rs2));
+                    // $display("BR != : rs1 = %h, rs2 = %h, result = %b", execute.rs1, execute.rs2, PCMux_E);
+                end
                 2: begin
                     if (execute.contr.m_store.Usign) PCMux_E = ((execute.rs1) < (execute.rs2));
                     else PCMux_E = ($signed(execute.rs1) < $signed(execute.rs2));
@@ -250,7 +258,9 @@ module risc_v(
                     if (execute.contr.m_store.Usign) PCMux_E = ((execute.rs1) >= (execute.rs2));
                     else PCMux_E = ($signed(execute.rs1) >= $signed(execute.rs2));
                 end
-                default: PCMux_E = 1'bx;
+                default: begin
+                    PCMux_E = 1'bx; 
+                end
             endcase
         end
     end    
@@ -376,16 +386,18 @@ module risc_v(
     logic [31:0] next_pc;
     always_comb begin
         next_pc = (PCMux_E) ? TargetPC_E : PC + 4;
+        // if (PCMux_E === 1'bx) $display("Warning: PCMux_E is X at time %0t, dump info: execute.contr.BR = %d, execute.pc = %h", $time, execute.contr.BR, execute.pc);
+        // $monitor("Time=%0t | next_pc = %h, PCMux_E = %b, TargetPC_E = %h, PC = %h", $time, next_pc[31:2], PCMux_E, TargetPC_E[31:2], PC);
     end
     
     // dependency logic
     logic stall;
-    wire e1_match = (RS1 == execute.rdid) && execute.valid;
-    wire m1_match = (RS1 == memory.rdid) && memory.valid;
-    wire w1_match = (RS1 == writeback.rdid) && writeback.valid;
-    wire e2_match = (RS2 == execute.rdid) && execute.valid;
-    wire m2_match = (RS2 == memory.rdid) && memory.valid;
-    wire w2_match = (RS2 == writeback.rdid) && writeback.valid;
+    wire e1_match = (RS1 == execute.rdid) && execute.valid && execute.contr.m_store.w_store.LdReg;
+    wire m1_match = (RS1 == memory.rdid) && memory.valid && memory.contr.w_store.LdReg;
+    wire w1_match = (RS1 == writeback.rdid) && writeback.valid && writeback.contr.LdReg;
+    wire e2_match = (RS2 == execute.rdid) && execute.valid && execute.contr.m_store.w_store.LdReg;
+    wire m2_match = (RS2 == memory.rdid) && memory.valid && memory.contr.w_store.LdReg;
+    wire w2_match = (RS2 == writeback.rdid) && writeback.valid && writeback.contr.LdReg;
     always_comb begin
         LdPC = 1; Ld_D = 1; V_D = 1; Ld_E = 1; V_E = 1; V_M = 1; V_W = 1;
         TargetPC_E = 32'bx; 
@@ -428,7 +440,7 @@ module risc_v(
         if (PCMux_E) begin
 //            LdPC = 0; 
             TargetPC_E = alu_result; V_D = 0; V_E = 0;
-            $display("Jumping from %h to %h", execute.pc, TargetPC_E);
+            // $display("Jumping from %h to %h", execute.pc[31:2], TargetPC_E[31:2]);
         end
             
         // stall logic
@@ -444,17 +456,30 @@ module risc_v(
     end
     
     // step forward when dBTNU clicked then released
-    logic [1:0] Pause;
+    logic [1:0] Pause; logic [$clog2(STEP_SIZE)-1:0] step_ctr;
     always_ff @(posedge CLK) begin
-        if (RST) 
+        if (RST) begin
             Pause <= 1;
-        else 
+            step_ctr <= 0;
+        end else begin
         if (clk_cpu) begin
-            case (Pause)
-                0: Pause <= 2; // when Pause=0, only move forward one cycle
-                1: if (dBTNU) Pause <= 0; // when Pause=1, dBTNU=1 goes to 0
-                2: if (!dBTNU) Pause <= 1; // wait for dBTNU=0, brings back to 1
-            endcase
+            if (GO) Pause <= 0; // when GO=1, run continuously
+            else begin
+                case (Pause)
+                    0: begin
+                        if (step_ctr == 0) Pause <= 2; // when Pause=0, only move forward one cycle if step_ctr = 0
+                        else step_ctr <= step_ctr - 1;
+                    end
+                    1: begin 
+                        if (dBTNU) begin
+                            Pause <= 0; // when Pause=1, dBTNU=1 goes to 0
+                            step_ctr <= (STEPx10) ? STEP_SIZE-1 : 0; // set counter
+                        end
+                    end
+                    2: if (!dBTNU) Pause <= 1; // wait for dBTNU=0, brings back to 1
+                endcase
+            end
+        end
         end
     end
 
@@ -464,7 +489,10 @@ module risc_v(
         if (clk_cpu) begin
         // if last instr is a taken loop back, make sure to reset to 0 on !Finish
         if (RST || !Finish) Finish_Ctr = 0;
-        else if (Finish_Ctr != 3) Finish_Ctr += 1;
+        else if (Finish_Ctr != 3) begin
+            Finish_Ctr <= Finish_Ctr + 1;
+            $display("Finish Ctr Incrementing to: %0d", Finish_Ctr + 1);
+        end
         end
     end
 

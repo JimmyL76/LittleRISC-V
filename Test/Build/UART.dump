@@ -1,0 +1,1890 @@
+
+Build/UART.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+.global _start
+
+_start:
+    # set sp to top of memory
+    # FPGA mem is 32KB with 4K words, stack is in bytes so still 32K
+    li sp, 0x00008000 
+   0:	00008137          	lui	sp,0x8
+
+    call main
+   4:	2c4000ef          	jal	2c8 <main>
+
+00000008 <_park>:
+
+    # 3. if main ever returns, stay in an infinite loop
+_park:
+    j _park
+   8:	0000006f          	j	8 <_park>
+
+0000000c <delay>:
+#define LEDS (*((volatile int*)0x00008000)) 
+#define SEG_REG (*((volatile int*)0x00008004)) 
+#define UART_STATUS (*((volatile int*)0x00008008)) 
+#define UART_DATA   (*((volatile int*)0x0000800C)) 
+
+void delay(int count) {
+   c:	fe010113          	addi	sp,sp,-32 # 7fe0 <__mulsi3+0x7cf0>
+  10:	00812e23          	sw	s0,28(sp)
+  14:	02010413          	addi	s0,sp,32
+  18:	fea42623          	sw	a0,-20(s0)
+    while(count--) __asm volatile("nop");
+  1c:	0080006f          	j	24 <delay+0x18>
+  20:	00000013          	nop
+  24:	fec42783          	lw	a5,-20(s0)
+  28:	fff78713          	addi	a4,a5,-1
+  2c:	fee42623          	sw	a4,-20(s0)
+  30:	fe0798e3          	bnez	a5,20 <delay+0x14>
+}
+  34:	00000013          	nop
+  38:	00000013          	nop
+  3c:	01c12403          	lw	s0,28(sp)
+  40:	02010113          	addi	sp,sp,32
+  44:	00008067          	ret
+
+00000048 <led>:
+
+void led() {
+  48:	fe010113          	addi	sp,sp,-32
+  4c:	00112e23          	sw	ra,28(sp)
+  50:	00812c23          	sw	s0,24(sp)
+  54:	02010413          	addi	s0,sp,32
+    int val = 1;
+  58:	00100793          	li	a5,1
+  5c:	fef42623          	sw	a5,-20(s0)
+    int dir = 0; // 0 = left, 1 = right
+  60:	fe042423          	sw	zero,-24(s0)
+    
+    while(1) {
+        LEDS = val;
+  64:	000087b7          	lui	a5,0x8
+  68:	fec42703          	lw	a4,-20(s0)
+  6c:	00e7a023          	sw	a4,0(a5) # 8000 <__mulsi3+0x7d10>
+        delay(100000); 
+  70:	000187b7          	lui	a5,0x18
+  74:	6a078513          	addi	a0,a5,1696 # 186a0 <__mulsi3+0x183b0>
+  78:	f95ff0ef          	jal	c <delay>
+        
+        if (dir == 0) {
+  7c:	fe842783          	lw	a5,-24(s0)
+  80:	02079463          	bnez	a5,a8 <led+0x60>
+            val = val << 1;
+  84:	fec42783          	lw	a5,-20(s0)
+  88:	00179793          	slli	a5,a5,0x1
+  8c:	fef42623          	sw	a5,-20(s0)
+            if (val >= 0x8000) dir = 1; 
+  90:	fec42703          	lw	a4,-20(s0)
+  94:	000087b7          	lui	a5,0x8
+  98:	fcf746e3          	blt	a4,a5,64 <led+0x1c>
+  9c:	00100793          	li	a5,1
+  a0:	fef42423          	sw	a5,-24(s0)
+  a4:	fc1ff06f          	j	64 <led+0x1c>
+        } else {
+            val = val >> 1;
+  a8:	fec42783          	lw	a5,-20(s0)
+  ac:	4017d793          	srai	a5,a5,0x1
+  b0:	fef42623          	sw	a5,-20(s0)
+            if (val <= 1) dir = 0; 
+  b4:	fec42703          	lw	a4,-20(s0)
+  b8:	00100793          	li	a5,1
+  bc:	fae7c4e3          	blt	a5,a4,64 <led+0x1c>
+  c0:	fe042423          	sw	zero,-24(s0)
+        LEDS = val;
+  c4:	fa1ff06f          	j	64 <led+0x1c>
+
+000000c8 <seg>:
+        }
+    }
+}
+
+void seg() {
+  c8:	fd010113          	addi	sp,sp,-48
+  cc:	02112623          	sw	ra,44(sp)
+  d0:	02812423          	sw	s0,40(sp)
+  d4:	03010413          	addi	s0,sp,48
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  d8:	31400793          	li	a5,788
+  dc:	0007a603          	lw	a2,0(a5) # 8000 <__mulsi3+0x7d10>
+  e0:	0047a683          	lw	a3,4(a5)
+  e4:	0087a703          	lw	a4,8(a5)
+  e8:	00c7a783          	lw	a5,12(a5)
+  ec:	fcc42e23          	sw	a2,-36(s0)
+  f0:	fed42023          	sw	a3,-32(s0)
+  f4:	fee42223          	sw	a4,-28(s0)
+  f8:	fef42423          	sw	a5,-24(s0)
+    int i = 0;
+  fc:	fe042623          	sw	zero,-20(s0)
+    while(1) {
+        SEG_REG = segments[i];
+ 100:	fec42783          	lw	a5,-20(s0)
+ 104:	ff078793          	addi	a5,a5,-16
+ 108:	008787b3          	add	a5,a5,s0
+ 10c:	fec7c703          	lbu	a4,-20(a5)
+ 110:	000087b7          	lui	a5,0x8
+ 114:	00478793          	addi	a5,a5,4 # 8004 <__mulsi3+0x7d14>
+ 118:	00e7a023          	sw	a4,0(a5)
+        delay(500000);
+ 11c:	0007a7b7          	lui	a5,0x7a
+ 120:	12078513          	addi	a0,a5,288 # 7a120 <__mulsi3+0x79e30>
+ 124:	ee9ff0ef          	jal	c <delay>
+        i++;
+ 128:	fec42783          	lw	a5,-20(s0)
+ 12c:	00178793          	addi	a5,a5,1
+ 130:	fef42623          	sw	a5,-20(s0)
+        if (i > 15) i = 0;
+ 134:	fec42703          	lw	a4,-20(s0)
+ 138:	00f00793          	li	a5,15
+ 13c:	fce7d2e3          	bge	a5,a4,100 <seg+0x38>
+ 140:	fe042623          	sw	zero,-20(s0)
+        SEG_REG = segments[i];
+ 144:	fbdff06f          	j	100 <seg+0x38>
+
+00000148 <fibonacci>:
+    }
+}
+
+void fibonacci() {
+ 148:	fe010113          	addi	sp,sp,-32
+ 14c:	00112e23          	sw	ra,28(sp)
+ 150:	00812c23          	sw	s0,24(sp)
+ 154:	02010413          	addi	s0,sp,32
+    int a = 0;
+ 158:	fe042623          	sw	zero,-20(s0)
+    int b = 1;
+ 15c:	00100793          	li	a5,1
+ 160:	fef42423          	sw	a5,-24(s0)
+    int temp;
+    
+    while(1) {
+        LEDS = b;
+ 164:	000087b7          	lui	a5,0x8
+ 168:	fe842703          	lw	a4,-24(s0)
+ 16c:	00e7a023          	sw	a4,0(a5) # 8000 <__mulsi3+0x7d10>
+        delay(500000);
+ 170:	0007a7b7          	lui	a5,0x7a
+ 174:	12078513          	addi	a0,a5,288 # 7a120 <__mulsi3+0x79e30>
+ 178:	e95ff0ef          	jal	c <delay>
+        
+        // tests forwarding logic with dependent instrs
+        temp = a + b;
+ 17c:	fec42703          	lw	a4,-20(s0)
+ 180:	fe842783          	lw	a5,-24(s0)
+ 184:	00f707b3          	add	a5,a4,a5
+ 188:	fef42223          	sw	a5,-28(s0)
+        a = b;
+ 18c:	fe842783          	lw	a5,-24(s0)
+ 190:	fef42623          	sw	a5,-20(s0)
+        b = temp;
+ 194:	fe442783          	lw	a5,-28(s0)
+ 198:	fef42423          	sw	a5,-24(s0)
+        
+        // Reset if it overflows 16 bits
+        if (b > 65535) { 
+ 19c:	fe842703          	lw	a4,-24(s0)
+ 1a0:	000107b7          	lui	a5,0x10
+ 1a4:	fcf740e3          	blt	a4,a5,164 <fibonacci+0x1c>
+            a = 0; 
+ 1a8:	fe042623          	sw	zero,-20(s0)
+            b = 1; 
+ 1ac:	00100793          	li	a5,1
+ 1b0:	fef42423          	sw	a5,-24(s0)
+        LEDS = b;
+ 1b4:	fb1ff06f          	j	164 <fibonacci+0x1c>
+
+000001b8 <factorial>:
+        }
+    }
+}
+
+int factorial(int n) {
+ 1b8:	fe010113          	addi	sp,sp,-32
+ 1bc:	00112e23          	sw	ra,28(sp)
+ 1c0:	00812c23          	sw	s0,24(sp)
+ 1c4:	02010413          	addi	s0,sp,32
+ 1c8:	fea42623          	sw	a0,-20(s0)
+    if (n <= 1) return 1;
+ 1cc:	fec42703          	lw	a4,-20(s0)
+ 1d0:	00100793          	li	a5,1
+ 1d4:	00e7c663          	blt	a5,a4,1e0 <factorial+0x28>
+ 1d8:	00100793          	li	a5,1
+ 1dc:	0280006f          	j	204 <factorial+0x4c>
+    // CPU should save n and return addr to stack before jumping again
+    return n * factorial(n - 1);
+ 1e0:	fec42783          	lw	a5,-20(s0)
+ 1e4:	fff78793          	addi	a5,a5,-1 # ffff <__mulsi3+0xfd0f>
+ 1e8:	00078513          	mv	a0,a5
+ 1ec:	fcdff0ef          	jal	1b8 <factorial>
+ 1f0:	00050793          	mv	a5,a0
+ 1f4:	fec42583          	lw	a1,-20(s0)
+ 1f8:	00078513          	mv	a0,a5
+ 1fc:	0f4000ef          	jal	2f0 <__mulsi3>
+ 200:	00050793          	mv	a5,a0
+}
+ 204:	00078513          	mv	a0,a5
+ 208:	01c12083          	lw	ra,28(sp)
+ 20c:	01812403          	lw	s0,24(sp)
+ 210:	02010113          	addi	sp,sp,32
+ 214:	00008067          	ret
+
+00000218 <recursive>:
+
+void recursive() {
+ 218:	fe010113          	addi	sp,sp,-32
+ 21c:	00112e23          	sw	ra,28(sp)
+ 220:	00812c23          	sw	s0,24(sp)
+ 224:	02010413          	addi	s0,sp,32
+    int result = factorial(5); // 5! = 120
+ 228:	00500513          	li	a0,5
+ 22c:	f8dff0ef          	jal	1b8 <factorial>
+ 230:	fea42623          	sw	a0,-20(s0)
+    LEDS = result;
+ 234:	000087b7          	lui	a5,0x8
+ 238:	fec42703          	lw	a4,-20(s0)
+ 23c:	00e7a023          	sw	a4,0(a5) # 8000 <__mulsi3+0x7d10>
+    while(1);
+ 240:	0000006f          	j	240 <recursive+0x28>
+
+00000244 <UART>:
+}
+
+void UART() {
+ 244:	fe010113          	addi	sp,sp,-32
+ 248:	00812e23          	sw	s0,28(sp)
+ 24c:	02010413          	addi	s0,sp,32
+    char c;
+    while(1) {
+        // poll until rx_valid is 1
+        while ((UART_STATUS & 1) == 0); 
+ 250:	00000013          	nop
+ 254:	000087b7          	lui	a5,0x8
+ 258:	00878793          	addi	a5,a5,8 # 8008 <__mulsi3+0x7d18>
+ 25c:	0007a783          	lw	a5,0(a5)
+ 260:	0017f793          	andi	a5,a5,1
+ 264:	fe0788e3          	beqz	a5,254 <UART+0x10>
+        
+        c = UART_DATA;
+ 268:	000087b7          	lui	a5,0x8
+ 26c:	00c78793          	addi	a5,a5,12 # 800c <__mulsi3+0x7d1c>
+ 270:	0007a783          	lw	a5,0(a5)
+ 274:	fef407a3          	sb	a5,-17(s0)
+        LEDS = c;
+ 278:	000087b7          	lui	a5,0x8
+ 27c:	fef44703          	lbu	a4,-17(s0)
+ 280:	00e7a023          	sw	a4,0(a5) # 8000 <__mulsi3+0x7d10>
+        
+        // echo after tx_ready is 1
+        while ((UART_STATUS & 2) == 0);
+ 284:	00000013          	nop
+ 288:	000087b7          	lui	a5,0x8
+ 28c:	00878793          	addi	a5,a5,8 # 8008 <__mulsi3+0x7d18>
+ 290:	0007a783          	lw	a5,0(a5)
+ 294:	0027f793          	andi	a5,a5,2
+ 298:	fe0788e3          	beqz	a5,288 <UART+0x44>
+        UART_DATA = c;
+ 29c:	000087b7          	lui	a5,0x8
+ 2a0:	00c78793          	addi	a5,a5,12 # 800c <__mulsi3+0x7d1c>
+ 2a4:	fef44703          	lbu	a4,-17(s0)
+ 2a8:	00e7a023          	sw	a4,0(a5)
+        while ((UART_STATUS & 1) == 0); 
+ 2ac:	fa5ff06f          	j	250 <UART+0xc>
+
+000002b0 <add_test>:
+    }
+}
+
+int add_test() {
+ 2b0:	ff010113          	addi	sp,sp,-16
+ 2b4:	00812623          	sw	s0,12(sp)
+ 2b8:	01010413          	addi	s0,sp,16
+    __asm volatile ("addi x1, x0, 0");
+ 2bc:	00000093          	li	ra,0
+
+    while(1) {
+        __asm volatile ("addi x1, x1, 1");
+ 2c0:	00108093          	addi	ra,ra,1
+ 2c4:	ffdff06f          	j	2c0 <add_test+0x10>
+
+000002c8 <main>:
+    }
+
+    return 0;
+}
+
+void main() {
+ 2c8:	ff010113          	addi	sp,sp,-16
+ 2cc:	00112623          	sw	ra,12(sp)
+ 2d0:	00812423          	sw	s0,8(sp)
+ 2d4:	01010413          	addi	s0,sp,16
+    // led();
+    // seg();
+    // fibonacci();
+    // recursive();
+    UART();
+ 2d8:	f6dff0ef          	jal	244 <UART>
+    // add_test();
+ 2dc:	00000013          	nop
+ 2e0:	00c12083          	lw	ra,12(sp)
+ 2e4:	00812403          	lw	s0,8(sp)
+ 2e8:	01010113          	addi	sp,sp,16
+ 2ec:	00008067          	ret
+
+000002f0 <__mulsi3>:
+ 2f0:	00050613          	mv	a2,a0
+ 2f4:	00000513          	li	a0,0
+ 2f8:	0015f693          	andi	a3,a1,1
+ 2fc:	00068463          	beqz	a3,304 <__mulsi3+0x14>
+ 300:	00c50533          	add	a0,a0,a2
+ 304:	0015d593          	srli	a1,a1,0x1
+ 308:	00161613          	slli	a2,a2,0x1
+ 30c:	fe0596e3          	bnez	a1,2f8 <__mulsi3+0x8>
+ 310:	00008067          	ret
+
+Disassembly of section .rodata:
+
+00000314 <.rodata>:
+ 314:	0100                	.insn	2, 0x0100
+ 316:	0302                	.insn	2, 0x0302
+ 318:	0504                	.insn	2, 0x0504
+ 31a:	0706                	.insn	2, 0x0706
+ 31c:	0908                	.insn	2, 0x0908
+ 31e:	0b0a                	.insn	2, 0x0b0a
+ 320:	0d0c                	.insn	2, 0x0d0c
+ 322:	0f0e                	.insn	2, 0x0f0e
+
+Disassembly of section .riscv.attributes:
+
+00000000 <.riscv.attributes>:
+    li sp, 0x00008000 
+   0:	1b41                	.insn	2, 0x1b41
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	7200                	.insn	2, 0x7200
+   6:	7369                	.insn	2, 0x7369
+    j _park
+   8:	01007663          	bgeu	zero,a6,14 <delay+0x8>
+void delay(int count) {
+   c:	0011                	.insn	2, 0x0011
+   e:	0000                	.insn	2, 0x
+  10:	1004                	.insn	2, 0x1004
+  12:	7205                	.insn	2, 0x7205
+  14:	3376                	.insn	2, 0x3376
+  16:	6932                	.insn	2, 0x6932
+  18:	7032                	.insn	2, 0x7032
+  1a:	0031                	.insn	2, 0x0031
+
+Disassembly of section .comment:
+
+00000000 <.comment>:
+    li sp, 0x00008000 
+   0:	3a434347          	.insn	4, 0x3a434347
+    call main
+   4:	2820                	.insn	2, 0x2820
+   6:	3331                	.insn	2, 0x3331
+    j _park
+   8:	322e                	.insn	2, 0x322e
+   a:	302e                	.insn	2, 0x302e
+   c:	312d                	.insn	2, 0x312d
+   e:	7531                	.insn	2, 0x7531
+  10:	7562                	.insn	2, 0x7562
+  12:	746e                	.insn	2, 0x746e
+  14:	3175                	.insn	2, 0x3175
+  16:	2932312b          	.insn	4, 0x2932312b
+  1a:	3120                	.insn	2, 0x3120
+    while(count--) __asm volatile("nop");
+  1c:	2e322e33          	.insn	4, 0x2e322e33
+  20:	0030                	.insn	2, 0x0030
+
+Disassembly of section .debug_line:
+
+00000000 <.debug_line>:
+    li sp, 0x00008000 
+   0:	004c                	.insn	2, 0x004c
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	0005                	.insn	2, 0x0005
+   6:	0004                	.insn	2, 0x0004
+    j _park
+   8:	002a                	.insn	2, 0x002a
+   a:	0000                	.insn	2, 0x
+void delay(int count) {
+   c:	0101                	.insn	2, 0x0101
+   e:	fb01                	.insn	2, 0xfb01
+  10:	0d0e                	.insn	2, 0x0d0e
+  12:	0100                	.insn	2, 0x0100
+  14:	0101                	.insn	2, 0x0101
+  16:	0001                	.insn	2, 0x0001
+  18:	0000                	.insn	2, 0x
+  1a:	0001                	.insn	2, 0x0001
+    while(count--) __asm volatile("nop");
+  1c:	0100                	.insn	2, 0x0100
+  1e:	0101                	.insn	2, 0x0101
+  20:	011f 0000 0000      	.insn	6, 0x011f
+  26:	0102                	.insn	2, 0x0102
+  28:	021f 020f 007f      	.insn	6, 0x007f020f021f
+  2e:	0000                	.insn	2, 0x
+  30:	7f00                	.insn	2, 0x7f00
+  32:	0000                	.insn	2, 0x
+}
+  34:	0000                	.insn	2, 0x
+  36:	0500                	.insn	2, 0x0500
+  38:	0002                	.insn	2, 0x0002
+  3a:	0000                	.insn	2, 0x
+  3c:	1800                	.insn	2, 0x1800
+  3e:	04090203          	lb	tp,64(s2)
+  42:	0100                	.insn	2, 0x0100
+  44:	04090403          	lb	s0,64(s2)
+void led() {
+  48:	0100                	.insn	2, 0x0100
+  4a:	0409                	.insn	2, 0x0409
+  4c:	0000                	.insn	2, 0x
+  4e:	0101                	.insn	2, 0x0101
+  50:	02de                	.insn	2, 0x02de
+  52:	0000                	.insn	2, 0x
+  54:	0005                	.insn	2, 0x0005
+  56:	0004                	.insn	2, 0x0004
+    int val = 1;
+  58:	002a                	.insn	2, 0x002a
+  5a:	0000                	.insn	2, 0x
+  5c:	0101                	.insn	2, 0x0101
+  5e:	fb01                	.insn	2, 0xfb01
+    int dir = 0; // 0 = left, 1 = right
+  60:	0d0e                	.insn	2, 0x0d0e
+  62:	0100                	.insn	2, 0x0100
+        LEDS = val;
+  64:	0101                	.insn	2, 0x0101
+  66:	0001                	.insn	2, 0x0001
+  68:	0000                	.insn	2, 0x
+  6a:	0001                	.insn	2, 0x0001
+  6c:	0100                	.insn	2, 0x0100
+  6e:	0101                	.insn	2, 0x0101
+        delay(100000); 
+  70:	011f 0000 0000      	.insn	6, 0x011f
+  76:	0102                	.insn	2, 0x0102
+  78:	021f 020f 0087      	.insn	6, 0x0087020f021f
+        if (dir == 0) {
+  7e:	0000                	.insn	2, 0x
+  80:	8700                	.insn	2, 0x8700
+  82:	0000                	.insn	2, 0x
+            val = val << 1;
+  84:	0000                	.insn	2, 0x
+  86:	1705                	.insn	2, 0x1705
+  88:	0500                	.insn	2, 0x0500
+  8a:	0c02                	.insn	2, 0x0c02
+  8c:	0000                	.insn	2, 0x
+  8e:	1800                	.insn	2, 0x1800
+            if (val >= 0x8000) dir = 1; 
+  90:	0a05                	.insn	2, 0x0a05
+  92:	10090103          	lb	sp,256(s2)
+  96:	0100                	.insn	2, 0x0100
+  98:	1405                	.insn	2, 0x1405
+  9a:	0200                	.insn	2, 0x0200
+  9c:	0204                	.insn	2, 0x0204
+  9e:	04090003          	lb	zero,64(s2)
+  a2:	0100                	.insn	2, 0x0100
+  a4:	1005                	.insn	2, 0x1005
+  a6:	0200                	.insn	2, 0x0200
+            val = val >> 1;
+  a8:	0104                	.insn	2, 0x0104
+  aa:	04090003          	lb	zero,64(s2)
+  ae:	0100                	.insn	2, 0x0100
+  b0:	0b05                	.insn	2, 0x0b05
+  b2:	0200                	.insn	2, 0x0200
+            if (val <= 1) dir = 0; 
+  b4:	0104                	.insn	2, 0x0104
+  b6:	0c090003          	lb	zero,192(s2)
+  ba:	0100                	.insn	2, 0x0100
+  bc:	0105                	.insn	2, 0x0105
+  be:	04090103          	lb	sp,64(s2)
+  c2:	0100                	.insn	2, 0x0100
+        LEDS = val;
+  c4:	0c05                	.insn	2, 0x0c05
+  c6:	14090203          	lb	tp,320(s2)
+void seg() {
+  ca:	0100                	.insn	2, 0x0100
+  cc:	0905                	.insn	2, 0x0905
+  ce:	10090103          	lb	sp,256(s2)
+  d2:	0100                	.insn	2, 0x0100
+  d4:	08090103          	lb	sp,128(s2)
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  d8:	0100                	.insn	2, 0x0100
+  da:	04090303          	lb	t1,64(s2)
+  de:	0100                	.insn	2, 0x0100
+  e0:	0e05                	.insn	2, 0x0e05
+  e2:	04090003          	lb	zero,64(s2)
+  e6:	0100                	.insn	2, 0x0100
+  e8:	0905                	.insn	2, 0x0905
+  ea:	08090103          	lb	sp,128(s2)
+  ee:	0100                	.insn	2, 0x0100
+  f0:	0c05                	.insn	2, 0x0c05
+  f2:	0c090203          	lb	tp,192(s2)
+  f6:	0100                	.insn	2, 0x0100
+  f8:	1105                	.insn	2, 0x1105
+  fa:	08090103          	lb	sp,128(s2)
+    int i = 0;
+  fe:	0100                	.insn	2, 0x0100
+        SEG_REG = segments[i];
+ 100:	1005                	.insn	2, 0x1005
+ 102:	0c090103          	lb	sp,192(s2)
+ 106:	0100                	.insn	2, 0x0100
+ 108:	2405                	.insn	2, 0x2405
+ 10a:	0200                	.insn	2, 0x0200
+ 10c:	0104                	.insn	2, 0x0104
+ 10e:	0c090003          	lb	zero,192(s2)
+ 112:	0100                	.insn	2, 0x0100
+ 114:	1105                	.insn	2, 0x1105
+ 116:	0c090203          	lb	tp,192(s2)
+ 11a:	0100                	.insn	2, 0x0100
+        delay(500000);
+ 11c:	1005                	.insn	2, 0x1005
+ 11e:	0c090103          	lb	sp,192(s2)
+ 122:	0100                	.insn	2, 0x0100
+ 124:	1f05                	.insn	2, 0x1f05
+ 126:	0200                	.insn	2, 0x0200
+        i++;
+ 128:	0104                	.insn	2, 0x0104
+ 12a:	0c090003          	lb	zero,192(s2)
+ 12e:	0100                	.insn	2, 0x0100
+ 130:	0e05                	.insn	2, 0x0e05
+ 132:	04097803          	.insn	4, 0x04097803
+        if (i > 15) i = 0;
+ 136:	0100                	.insn	2, 0x0100
+ 138:	0c05                	.insn	2, 0x0c05
+ 13a:	04090d03          	lb	s10,64(s2)
+ 13e:	0100                	.insn	2, 0x0100
+ 140:	0a05                	.insn	2, 0x0a05
+ 142:	10090103          	lb	sp,256(s2)
+        SEG_REG = segments[i];
+ 146:	0100                	.insn	2, 0x0100
+void fibonacci() {
+ 148:	0905                	.insn	2, 0x0905
+ 14a:	24090103          	lb	sp,576(s2)
+ 14e:	0100                	.insn	2, 0x0100
+ 150:	1b05                	.insn	2, 0x1b05
+ 152:	04090203          	lb	tp,64(s2)
+ 156:	0100                	.insn	2, 0x0100
+    int a = 0;
+ 158:	0905                	.insn	2, 0x0905
+ 15a:	10090003          	lb	zero,256(s2)
+    int b = 1;
+ 15e:	0100                	.insn	2, 0x0100
+ 160:	1105                	.insn	2, 0x1105
+ 162:	08090003          	lb	zero,128(s2)
+        LEDS = b;
+ 166:	0100                	.insn	2, 0x0100
+ 168:	0905                	.insn	2, 0x0905
+ 16a:	04090103          	lb	sp,64(s2)
+ 16e:	0100                	.insn	2, 0x0100
+        delay(500000);
+ 170:	0a05                	.insn	2, 0x0a05
+ 172:	0c090103          	lb	sp,192(s2)
+ 176:	0100                	.insn	2, 0x0100
+ 178:	0c05                	.insn	2, 0x0c05
+ 17a:	0c090103          	lb	sp,192(s2)
+        temp = a + b;
+ 17e:	0100                	.insn	2, 0x0100
+ 180:	1705                	.insn	2, 0x1705
+ 182:	0200                	.insn	2, 0x0200
+ 184:	0104                	.insn	2, 0x0104
+ 186:	0c090003          	lb	zero,192(s2)
+ 18a:	0100                	.insn	2, 0x0100
+        a = b;
+ 18c:	1105                	.insn	2, 0x1105
+ 18e:	04097d03          	.insn	4, 0x04097d03
+ 192:	0100                	.insn	2, 0x0100
+        b = temp;
+ 194:	1205                	.insn	2, 0x1205
+ 196:	04090703          	lb	a4,64(s2)
+ 19a:	0100                	.insn	2, 0x0100
+        if (b > 65535) { 
+ 19c:	0905                	.insn	2, 0x0905
+ 19e:	10090103          	lb	sp,256(s2)
+ 1a2:	0100                	.insn	2, 0x0100
+ 1a4:	04090103          	lb	sp,64(s2)
+            a = 0; 
+ 1a8:	0100                	.insn	2, 0x0100
+ 1aa:	08090403          	lb	s0,128(s2)
+            b = 1; 
+ 1ae:	0100                	.insn	2, 0x0100
+ 1b0:	0e05                	.insn	2, 0x0e05
+ 1b2:	04090003          	lb	zero,64(s2)
+        LEDS = b;
+ 1b6:	0100                	.insn	2, 0x0100
+int factorial(int n) {
+ 1b8:	0905                	.insn	2, 0x0905
+ 1ba:	08090103          	lb	sp,128(s2)
+ 1be:	0100                	.insn	2, 0x0100
+ 1c0:	0e05                	.insn	2, 0x0e05
+ 1c2:	0c090303          	lb	t1,192(s2)
+ 1c6:	0100                	.insn	2, 0x0100
+ 1c8:	0b05                	.insn	2, 0x0b05
+ 1ca:	10090103          	lb	sp,256(s2)
+    if (n <= 1) return 1;
+ 1ce:	0100                	.insn	2, 0x0100
+ 1d0:	08090103          	lb	sp,128(s2)
+ 1d4:	0100                	.insn	2, 0x0100
+ 1d6:	0c05                	.insn	2, 0x0c05
+ 1d8:	08090303          	lb	t1,128(s2)
+ 1dc:	0100                	.insn	2, 0x0100
+ 1de:	0f05                	.insn	2, 0x0f05
+    return n * factorial(n - 1);
+ 1e0:	0c090103          	lb	sp,192(s2)
+ 1e4:	0100                	.insn	2, 0x0100
+ 1e6:	04090103          	lb	sp,64(s2)
+ 1ea:	0100                	.insn	2, 0x0100
+ 1ec:	0e05                	.insn	2, 0x0e05
+ 1ee:	08097503          	.insn	4, 0x08097503
+ 1f2:	0100                	.insn	2, 0x0100
+ 1f4:	1605                	.insn	2, 0x1605
+ 1f6:	04091003          	lh	zero,64(s2)
+ 1fa:	0100                	.insn	2, 0x0100
+ 1fc:	0805                	.insn	2, 0x0805
+ 1fe:	14090103          	lb	sp,320(s2)
+ 202:	0100                	.insn	2, 0x0100
+}
+ 204:	1805                	.insn	2, 0x1805
+ 206:	0200                	.insn	2, 0x0200
+ 208:	0104                	.insn	2, 0x0104
+ 20a:	0c090003          	lb	zero,192(s2)
+ 20e:	0100                	.insn	2, 0x0100
+ 210:	0306                	.insn	2, 0x0306
+ 212:	0900                	.insn	2, 0x0900
+ 214:	0004                	.insn	2, 0x0004
+ 216:	0501                	.insn	2, 0x0501
+void recursive() {
+ 218:	0610                	.insn	2, 0x0610
+ 21a:	04090203          	lb	tp,64(s2)
+ 21e:	0100                	.insn	2, 0x0100
+ 220:	0e05                	.insn	2, 0x0e05
+ 222:	0200                	.insn	2, 0x0200
+ 224:	0104                	.insn	2, 0x0104
+ 226:	14090003          	lb	zero,320(s2)
+    int result = factorial(5); // 5! = 120
+ 22a:	0100                	.insn	2, 0x0100
+ 22c:	0105                	.insn	2, 0x0105
+ 22e:	10090103          	lb	sp,256(s2)
+ 232:	0100                	.insn	2, 0x0100
+    LEDS = result;
+ 234:	1205                	.insn	2, 0x1205
+ 236:	14090203          	lb	tp,320(s2)
+ 23a:	0100                	.insn	2, 0x0100
+ 23c:	10090103          	lb	sp,256(s2)
+    while(1);
+ 240:	0100                	.insn	2, 0x0100
+ 242:	0505                	.insn	2, 0x0505
+void UART() {
+ 244:	0c090103          	lb	sp,192(s2)
+ 248:	0100                	.insn	2, 0x0100
+ 24a:	0a05                	.insn	2, 0x0a05
+ 24c:	04090003          	lb	zero,64(s2)
+        while ((UART_STATUS & 1) == 0); 
+ 250:	0100                	.insn	2, 0x0100
+ 252:	08090103          	lb	sp,128(s2)
+ 256:	0100                	.insn	2, 0x0100
+ 258:	0d05                	.insn	2, 0x0d05
+ 25a:	04090303          	lb	t1,64(s2)
+ 25e:	0100                	.insn	2, 0x0100
+ 260:	0f05                	.insn	2, 0x0f05
+ 262:	0c090403          	lb	s0,192(s2)
+ 266:	0100                	.insn	2, 0x0100
+        c = UART_DATA;
+ 268:	1105                	.insn	2, 0x1105
+ 26a:	0200                	.insn	2, 0x0200
+ 26c:	0104                	.insn	2, 0x0104
+ 26e:	04090003          	lb	zero,64(s2)
+ 272:	0100                	.insn	2, 0x0100
+ 274:	1d05                	.insn	2, 0x1d05
+ 276:	0200                	.insn	2, 0x0200
+        LEDS = c;
+ 278:	0104                	.insn	2, 0x0104
+ 27a:	0c090003          	lb	zero,192(s2)
+ 27e:	0100                	.insn	2, 0x0100
+ 280:	2205                	.insn	2, 0x2205
+ 282:	0200                	.insn	2, 0x0200
+        while ((UART_STATUS & 2) == 0);
+ 284:	0104                	.insn	2, 0x0104
+ 286:	04090003          	lb	zero,64(s2)
+ 28a:	0100                	.insn	2, 0x0100
+ 28c:	0d05                	.insn	2, 0x0d05
+ 28e:	04090203          	lb	tp,64(s2)
+ 292:	0100                	.insn	2, 0x0100
+ 294:	0b05                	.insn	2, 0x0b05
+ 296:	0c090003          	lb	zero,192(s2)
+ 29a:	0100                	.insn	2, 0x0100
+        UART_DATA = c;
+ 29c:	0905                	.insn	2, 0x0905
+ 29e:	04090103          	lb	sp,64(s2)
+ 2a2:	0100                	.insn	2, 0x0100
+ 2a4:	0e05                	.insn	2, 0x0e05
+ 2a6:	04090003          	lb	zero,64(s2)
+ 2aa:	0100                	.insn	2, 0x0100
+        while ((UART_STATUS & 1) == 0); 
+ 2ac:	0f05                	.insn	2, 0x0f05
+ 2ae:	08090303          	lb	t1,128(s2)
+int add_test() {
+ 2b2:	0100                	.insn	2, 0x0100
+ 2b4:	1105                	.insn	2, 0x1105
+ 2b6:	0200                	.insn	2, 0x0200
+ 2b8:	0104                	.insn	2, 0x0104
+ 2ba:	04090003          	lb	zero,64(s2)
+    __asm volatile ("addi x1, x0, 0");
+ 2be:	0100                	.insn	2, 0x0100
+        __asm volatile ("addi x1, x1, 1");
+ 2c0:	1d05                	.insn	2, 0x1d05
+ 2c2:	0200                	.insn	2, 0x0200
+ 2c4:	0104                	.insn	2, 0x0104
+ 2c6:	0c090003          	lb	zero,192(s2)
+void main() {
+ 2ca:	0100                	.insn	2, 0x0100
+ 2cc:	2205                	.insn	2, 0x2205
+ 2ce:	0200                	.insn	2, 0x0200
+ 2d0:	0104                	.insn	2, 0x0104
+ 2d2:	04090003          	lb	zero,64(s2)
+ 2d6:	0100                	.insn	2, 0x0100
+    UART();
+ 2d8:	0905                	.insn	2, 0x0905
+ 2da:	04090103          	lb	sp,64(s2)
+ 2de:	0100                	.insn	2, 0x0100
+ 2e0:	1305                	.insn	2, 0x1305
+ 2e2:	08090003          	lb	zero,128(s2)
+ 2e6:	0100                	.insn	2, 0x0100
+ 2e8:	0f05                	.insn	2, 0x0f05
+ 2ea:	08097903          	.insn	4, 0x08097903
+ 2ee:	0100                	.insn	2, 0x0100
+ 2f0:	1005                	.insn	2, 0x1005
+ 2f2:	04090b03          	lb	s6,64(s2)
+ 2f6:	0100                	.insn	2, 0x0100
+ 2f8:	0505                	.insn	2, 0x0505
+ 2fa:	0c090103          	lb	sp,192(s2)
+ 2fe:	0100                	.insn	2, 0x0100
+ 300:	0905                	.insn	2, 0x0905
+ 302:	0200                	.insn	2, 0x0200
+ 304:	0104                	.insn	2, 0x0104
+ 306:	04090303          	lb	t1,64(s2)
+ 30a:	0100                	.insn	2, 0x0100
+ 30c:	0306                	.insn	2, 0x0306
+ 30e:	0900                	.insn	2, 0x0900
+ 310:	0004                	.insn	2, 0x0004
+ 312:	0501                	.insn	2, 0x0501
+ 314:	060d                	.insn	2, 0x060d
+ 316:	04090603          	lb	a2,64(s2)
+ 31a:	0100                	.insn	2, 0x0100
+ 31c:	0505                	.insn	2, 0x0505
+ 31e:	10090503          	lb	a0,256(s2)
+ 322:	0100                	.insn	2, 0x0100
+ 324:	0105                	.insn	2, 0x0105
+ 326:	04090203          	lb	tp,64(s2)
+ 32a:	0100                	.insn	2, 0x0100
+ 32c:	1409                	.insn	2, 0x1409
+ 32e:	0000                	.insn	2, 0x
+ 330:	0101                	.insn	2, 0x0101
+ 332:	0076                	.insn	2, 0x0076
+ 334:	0000                	.insn	2, 0x
+ 336:	0005                	.insn	2, 0x0005
+ 338:	0004                	.insn	2, 0x0004
+ 33a:	002e                	.insn	2, 0x002e
+ 33c:	0000                	.insn	2, 0x
+ 33e:	0101                	.insn	2, 0x0101
+ 340:	fb01                	.insn	2, 0xfb01
+ 342:	0d0e                	.insn	2, 0x0d0e
+ 344:	0100                	.insn	2, 0x0100
+ 346:	0101                	.insn	2, 0x0101
+ 348:	0001                	.insn	2, 0x0001
+ 34a:	0000                	.insn	2, 0x
+ 34c:	0001                	.insn	2, 0x0001
+ 34e:	0100                	.insn	2, 0x0100
+ 350:	0101                	.insn	2, 0x0101
+ 352:	021f 008e 0000      	.insn	6, 0x008e021f
+ 358:	00fc                	.insn	2, 0x00fc
+ 35a:	0000                	.insn	2, 0x
+ 35c:	0102                	.insn	2, 0x0102
+ 35e:	021f 020f 012a      	.insn	6, 0x012a020f021f
+ 364:	0000                	.insn	2, 0x
+ 366:	2a01                	.insn	2, 0x2a01
+ 368:	0001                	.insn	2, 0x0001
+ 36a:	0100                	.insn	2, 0x0100
+ 36c:	0500                	.insn	2, 0x0500
+ 36e:	f002                	.insn	2, 0xf002
+ 370:	0002                	.insn	2, 0x0002
+ 372:	0300                	.insn	2, 0x0300
+ 374:	0124                	.insn	2, 0x0124
+ 376:	04090103          	lb	sp,64(s2)
+ 37a:	0100                	.insn	2, 0x0100
+ 37c:	04090203          	lb	tp,64(s2)
+ 380:	0100                	.insn	2, 0x0100
+ 382:	04090103          	lb	sp,64(s2)
+ 386:	0100                	.insn	2, 0x0100
+ 388:	04090103          	lb	sp,64(s2)
+ 38c:	0100                	.insn	2, 0x0100
+ 38e:	04090203          	lb	tp,64(s2)
+ 392:	0100                	.insn	2, 0x0100
+ 394:	04090103          	lb	sp,64(s2)
+ 398:	0100                	.insn	2, 0x0100
+ 39a:	04090103          	lb	sp,64(s2)
+ 39e:	0100                	.insn	2, 0x0100
+ 3a0:	04090103          	lb	sp,64(s2)
+ 3a4:	0100                	.insn	2, 0x0100
+ 3a6:	0409                	.insn	2, 0x0409
+ 3a8:	0000                	.insn	2, 0x
+ 3aa:	0101                	.insn	2, 0x0101
+
+Disassembly of section .debug_line_str:
+
+00000000 <.debug_line_str>:
+    li sp, 0x00008000 
+   0:	746e6d2f          	.insn	4, 0x746e6d2f
+    call main
+   4:	4f2f672f          	.insn	4, 0x4f2f672f
+    j _park
+   8:	656e                	.insn	2, 0x656e
+   a:	7244                	.insn	2, 0x7244
+void delay(int count) {
+   c:	7669                	.insn	2, 0x7669
+   e:	2065                	.insn	2, 0x2065
+  10:	202d                	.insn	2, 0x202d
+  12:	6854                	.insn	2, 0x6854
+  14:	2065                	.insn	2, 0x2065
+  16:	6e55                	.insn	2, 0x6e55
+  18:	7669                	.insn	2, 0x7669
+  1a:	7265                	.insn	2, 0x7265
+    while(count--) __asm volatile("nop");
+  1c:	79746973          	.insn	4, 0x79746973
+  20:	6f20                	.insn	2, 0x6f20
+  22:	2066                	.insn	2, 0x2066
+  24:	6554                	.insn	2, 0x6554
+  26:	6178                	.insn	2, 0x6178
+  28:	74612073          	.insn	4, 0x74612073
+  2c:	4120                	.insn	2, 0x4120
+  2e:	7375                	.insn	2, 0x7375
+  30:	6974                	.insn	2, 0x6974
+  32:	2f6e                	.insn	2, 0x2f6e
+}
+  34:	3030                	.insn	2, 0x3030
+  36:	2d20                	.insn	2, 0x2d20
+  38:	5520                	.insn	2, 0x5520
+  3a:	2054                	.insn	2, 0x2054
+  3c:	7541                	.insn	2, 0x7541
+  3e:	6e697473          	.insn	4, 0x6e697473
+  42:	6f72502f          	.insn	4, 0x6f72502f
+  46:	6566                	.insn	2, 0x6566
+void led() {
+  48:	6f697373          	.insn	4, 0x6f697373
+  4c:	616e                	.insn	2, 0x616e
+  4e:	2f6c                	.insn	2, 0x2f6c
+  50:	6556                	.insn	2, 0x6556
+  52:	6972                	.insn	2, 0x6972
+  54:	6f6c                	.insn	2, 0x6f6c
+  56:	68542067          	.insn	4, 0x68542067
+    int val = 1;
+  5a:	6e69                	.insn	2, 0x6e69
+  5c:	6c2f7367          	.insn	4, 0x6c2f7367
+    int dir = 0; // 0 = left, 1 = right
+  60:	7469                	.insn	2, 0x7469
+  62:	6c74                	.insn	2, 0x6c74
+        LEDS = val;
+  64:	2d65                	.insn	2, 0x2d65
+  66:	4952                	.insn	2, 0x4952
+  68:	562d4353          	.insn	4, 0x562d4353
+  6c:	74694c2f          	.insn	4, 0x74694c2f
+        delay(100000); 
+  70:	6c74                	.insn	2, 0x6c74
+  72:	5265                	.insn	2, 0x5265
+  74:	5349                	.insn	2, 0x5349
+  76:	2f562d43          	.insn	4, 0x2f562d43
+  7a:	6554                	.insn	2, 0x6554
+        if (dir == 0) {
+  7c:	73007473          	.insn	4, 0x73007473
+  80:	6174                	.insn	2, 0x6174
+  82:	7472                	.insn	2, 0x7472
+            val = val << 1;
+  84:	732e                	.insn	2, 0x732e
+  86:	6d00                	.insn	2, 0x6d00
+  88:	6961                	.insn	2, 0x6961
+  8a:	2e6e                	.insn	2, 0x2e6e
+  8c:	622f0063          	beq	t5,sp,6ac <__mulsi3+0x3bc>
+            if (val >= 0x8000) dir = 1; 
+  90:	6975                	.insn	2, 0x6975
+  92:	646c                	.insn	2, 0x646c
+  94:	6363672f          	.insn	4, 0x6363672f
+  98:	722d                	.insn	2, 0x722d
+  9a:	7369                	.insn	2, 0x7369
+  9c:	34367663          	bgeu	a2,gp,3e8 <__mulsi3+0xf8>
+  a0:	752d                	.insn	2, 0x752d
+  a2:	6b6e                	.insn	2, 0x6b6e
+  a4:	6f6e                	.insn	2, 0x6f6e
+  a6:	652d6e77          	.insn	4, 0x652d6e77
+            val = val >> 1;
+  aa:	666c                	.insn	2, 0x666c
+  ac:	642d                	.insn	2, 0x642d
+  ae:	6642                	.insn	2, 0x6642
+  b0:	3336                	.insn	2, 0x3336
+  b2:	2f4e                	.insn	2, 0x2f4e
+            if (val <= 1) dir = 0; 
+  b4:	2d636367          	.insn	4, 0x2d636367
+  b8:	6972                	.insn	2, 0x6972
+  ba:	36766373          	.insn	4, 0x36766373
+  be:	2d34                	.insn	2, 0x2d34
+  c0:	6e75                	.insn	2, 0x6e75
+  c2:	776f6e6b          	.insn	4, 0x776f6e6b
+        LEDS = val;
+  c6:	2d6e                	.insn	2, 0x2d6e
+void seg() {
+  c8:	6c65                	.insn	2, 0x6c65
+  ca:	2d66                	.insn	2, 0x2d66
+  cc:	3231                	.insn	2, 0x3231
+  ce:	6975622f          	.insn	4, 0x6975622f
+  d2:	646c                	.insn	2, 0x646c
+  d4:	7369722f          	.insn	4, 0x7369722f
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  d8:	34367663          	bgeu	a2,gp,424 <__mulsi3+0x134>
+  dc:	752d                	.insn	2, 0x752d
+  de:	6b6e                	.insn	2, 0x6b6e
+  e0:	6f6e                	.insn	2, 0x6f6e
+  e2:	652d6e77          	.insn	4, 0x652d6e77
+  e6:	666c                	.insn	2, 0x666c
+  e8:	3376722f          	.insn	4, 0x3376722f
+  ec:	6932                	.insn	2, 0x6932
+  ee:	706c692f          	.insn	4, 0x706c692f
+  f2:	6c2f3233          	.insn	4, 0x6c2f3233
+  f6:	6269                	.insn	2, 0x6269
+  f8:	00636367          	.insn	4, 0x00636367
+    int i = 0;
+  fc:	2e2e                	.insn	2, 0x2e2e
+  fe:	2f2e2e2f          	.insn	4, 0x2f2e2e2f
+        SEG_REG = segments[i];
+ 102:	2e2e                	.insn	2, 0x2e2e
+ 104:	2f2e2e2f          	.insn	4, 0x2f2e2e2f
+ 108:	2e2e                	.insn	2, 0x2e2e
+ 10a:	6363672f          	.insn	4, 0x6363672f
+ 10e:	312d                	.insn	2, 0x312d
+ 110:	2e322e33          	.insn	4, 0x2e322e33
+ 114:	2f30                	.insn	2, 0x2f30
+ 116:	696c                	.insn	2, 0x696c
+ 118:	6762                	.insn	2, 0x6762
+ 11a:	632f6363          	bltu	t5,s2,740 <__mulsi3+0x450>
+        delay(500000);
+ 11e:	69666e6f          	jal	t3,667b4 <__mulsi3+0x664c4>
+ 122:	69722f67          	.insn	4, 0x69722f67
+ 126:	00766373          	.insn	4, 0x00766373
+        i++;
+ 12a:	756d                	.insn	2, 0x756d
+ 12c:	646c                	.insn	2, 0x646c
+ 12e:	3369                	.insn	2, 0x3369
+ 130:	532e                	.insn	2, 0x532e
+	...
+
+Disassembly of section .debug_info:
+
+00000000 <.debug_info>:
+    li sp, 0x00008000 
+   0:	0020                	.insn	2, 0x0020
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	0005                	.insn	2, 0x0005
+   6:	0401                	.insn	2, 0x0401
+    j _park
+   8:	0000                	.insn	2, 0x
+   a:	0000                	.insn	2, 0x
+void delay(int count) {
+   c:	0001                	.insn	2, 0x0001
+   e:	0000                	.insn	2, 0x
+  10:	0000                	.insn	2, 0x
+  12:	0000                	.insn	2, 0x
+  14:	1000                	.insn	2, 0x1000
+  16:	0000                	.insn	2, 0x
+  18:	0000                	.insn	2, 0x
+  1a:	0008                	.insn	2, 0x0008
+    while(count--) __asm volatile("nop");
+  1c:	0000                	.insn	2, 0x
+  1e:	00000087          	.insn	4, 0x0087
+  22:	8001                	.insn	2, 0x8001
+  24:	0000019b          	.insn	4, 0x019b
+  28:	0005                	.insn	2, 0x0005
+  2a:	0401                	.insn	2, 0x0401
+  2c:	0014                	.insn	2, 0x0014
+  2e:	0000                	.insn	2, 0x
+  30:	d406                	.insn	2, 0xd406
+  32:	0000                	.insn	2, 0x
+}
+  34:	1d00                	.insn	2, 0x1d00
+  36:	00000087          	.insn	4, 0x0087
+  3a:	0000                	.insn	2, 0x
+  3c:	0000                	.insn	2, 0x
+  3e:	000c                	.insn	2, 0x000c
+  40:	0000                	.insn	2, 0x
+  42:	02e4                	.insn	2, 0x02e4
+  44:	0000                	.insn	2, 0x
+  46:	0050                	.insn	2, 0x0050
+void led() {
+  48:	0000                	.insn	2, 0x
+  4a:	0000bf07          	.insn	4, 0xbf07
+  4e:	0100                	.insn	2, 0x0100
+  50:	02c80663          	beq	a6,a2,7c <led+0x34>
+  54:	0000                	.insn	2, 0x
+  56:	0028                	.insn	2, 0x0028
+    int val = 1;
+  58:	0000                	.insn	2, 0x
+  5a:	9c01                	.insn	2, 0x9c01
+  5c:	c408                	.insn	2, 0xc408
+  5e:	0000                	.insn	2, 0x
+    int dir = 0; // 0 = left, 1 = right
+  60:	0100                	.insn	2, 0x0100
+  62:	0559                	.insn	2, 0x0559
+        LEDS = val;
+  64:	004e                	.insn	2, 0x004e
+  66:	0000                	.insn	2, 0x
+  68:	02b0                	.insn	2, 0x02b0
+  6a:	0000                	.insn	2, 0x
+  6c:	0018                	.insn	2, 0x0018
+  6e:	0000                	.insn	2, 0x
+        delay(100000); 
+  70:	9c01                	.insn	2, 0x9c01
+  72:	0409                	.insn	2, 0x0409
+  74:	6905                	.insn	2, 0x6905
+  76:	746e                	.insn	2, 0x746e
+  78:	0a00                	.insn	2, 0x0a00
+  7a:	0130                	.insn	2, 0x0130
+        if (dir == 0) {
+  7c:	0000                	.insn	2, 0x
+  7e:	4a01                	.insn	2, 0x4a01
+  80:	4406                	.insn	2, 0x4406
+  82:	0002                	.insn	2, 0x0002
+            val = val << 1;
+  84:	6c00                	.insn	2, 0x6c00
+  86:	0000                	.insn	2, 0x
+  88:	0100                	.insn	2, 0x0100
+  8a:	789c                	.insn	2, 0x789c
+  8c:	0000                	.insn	2, 0x
+  8e:	0100                	.insn	2, 0x0100
+            if (val >= 0x8000) dir = 1; 
+  90:	0a4b0063          	beq	s6,tp,130 <seg+0x68>
+  94:	0078                	.insn	2, 0x0078
+  96:	0000                	.insn	2, 0x
+  98:	9102                	.insn	2, 0x9102
+  9a:	0103006f          	j	300aa <__mulsi3+0x2fdba>
+  9e:	3508                	.insn	2, 0x3508
+  a0:	0001                	.insn	2, 0x0001
+  a2:	0400                	.insn	2, 0x0400
+  a4:	000000ab          	.insn	4, 0x00ab
+            val = val >> 1;
+  a8:	1844                	.insn	2, 0x1844
+  aa:	0002                	.insn	2, 0x0002
+  ac:	2c00                	.insn	2, 0x2c00
+  ae:	0000                	.insn	2, 0x
+  b0:	0100                	.insn	2, 0x0100
+  b2:	a29c                	.insn	2, 0xa29c
+            if (val <= 1) dir = 0; 
+  b4:	0000                	.insn	2, 0x
+  b6:	0200                	.insn	2, 0x0200
+  b8:	00cd                	.insn	2, 0x00cd
+  ba:	0000                	.insn	2, 0x
+  bc:	0945                	.insn	2, 0x0945
+  be:	004e                	.insn	2, 0x004e
+  c0:	0000                	.insn	2, 0x
+  c2:	9102                	.insn	2, 0x9102
+        LEDS = val;
+  c4:	006c                	.insn	2, 0x006c
+  c6:	0001260b          	.insn	4, 0x0001260b
+void seg() {
+  ca:	0100                	.insn	2, 0x0100
+  cc:	053e                	.insn	2, 0x053e
+  ce:	004e                	.insn	2, 0x004e
+  d0:	0000                	.insn	2, 0x
+  d2:	01b8                	.insn	2, 0x01b8
+  d4:	0000                	.insn	2, 0x
+  d6:	0060                	.insn	2, 0x0060
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  d8:	0000                	.insn	2, 0x
+  da:	9c01                	.insn	2, 0x9c01
+  dc:	00ca                	.insn	2, 0x00ca
+  de:	0000                	.insn	2, 0x
+  e0:	6e0c                	.insn	2, 0x6e0c
+  e2:	0100                	.insn	2, 0x0100
+  e4:	133e                	.insn	2, 0x133e
+  e6:	004e                	.insn	2, 0x004e
+  e8:	0000                	.insn	2, 0x
+  ea:	9102                	.insn	2, 0x9102
+  ec:	006c                	.insn	2, 0x006c
+  ee:	b504                	.insn	2, 0xb504
+  f0:	0000                	.insn	2, 0x
+  f2:	2800                	.insn	2, 0x2800
+  f4:	0148                	.insn	2, 0x0148
+  f6:	0000                	.insn	2, 0x
+  f8:	0070                	.insn	2, 0x0070
+  fa:	0000                	.insn	2, 0x
+    int i = 0;
+  fc:	9c01                	.insn	2, 0x9c01
+  fe:	0105                	.insn	2, 0x0105
+        SEG_REG = segments[i];
+ 100:	0000                	.insn	2, 0x
+ 102:	6101                	.insn	2, 0x6101
+ 104:	2900                	.insn	2, 0x2900
+ 106:	4e09                	.insn	2, 0x4e09
+ 108:	0000                	.insn	2, 0x
+ 10a:	0200                	.insn	2, 0x0200
+ 10c:	6c91                	.insn	2, 0x6c91
+ 10e:	6201                	.insn	2, 0x6201
+ 110:	2a00                	.insn	2, 0x2a00
+ 112:	4e09                	.insn	2, 0x4e09
+ 114:	0000                	.insn	2, 0x
+ 116:	0200                	.insn	2, 0x0200
+ 118:	6891                	.insn	2, 0x6891
+ 11a:	a602                	.insn	2, 0xa602
+        delay(500000);
+ 11c:	0000                	.insn	2, 0x
+ 11e:	2b00                	.insn	2, 0x2b00
+ 120:	4e09                	.insn	2, 0x4e09
+ 122:	0000                	.insn	2, 0x
+ 124:	0200                	.insn	2, 0x0200
+ 126:	6491                	.insn	2, 0x6491
+        i++;
+ 128:	0500                	.insn	2, 0x0500
+ 12a:	00676573          	.insn	4, 0x00676573
+ 12e:	c81d                	.insn	2, 0xc81d
+ 130:	0000                	.insn	2, 0x
+ 132:	8000                	.insn	2, 0x8000
+        if (i > 15) i = 0;
+ 134:	0000                	.insn	2, 0x
+ 136:	0100                	.insn	2, 0x0100
+ 138:	349c                	.insn	2, 0x349c
+ 13a:	0001                	.insn	2, 0x0001
+ 13c:	0200                	.insn	2, 0x0200
+ 13e:	00000117          	auipc	sp,0x0
+ 142:	0a1e                	.insn	2, 0x0a1e
+        SEG_REG = segments[i];
+ 144:	0134                	.insn	2, 0x0134
+ 146:	0000                	.insn	2, 0x
+void fibonacci() {
+ 148:	9102                	.insn	2, 0x9102
+ 14a:	015c                	.insn	2, 0x015c
+ 14c:	0069                	.insn	2, 0x0069
+ 14e:	091f 004e 0000      	.insn	6, 0x004e091f
+ 154:	9102                	.insn	2, 0x9102
+ 156:	006c                	.insn	2, 0x006c
+    int a = 0;
+ 158:	780d                	.insn	2, 0x780d
+ 15a:	0000                	.insn	2, 0x
+    int b = 1;
+ 15c:	4400                	.insn	2, 0x4400
+ 15e:	0001                	.insn	2, 0x0001
+ 160:	0e00                	.insn	2, 0x0e00
+ 162:	0144                	.insn	2, 0x0144
+        LEDS = b;
+ 164:	0000                	.insn	2, 0x
+ 166:	0403000f          	.insn	4, 0x0403000f
+ 16a:	00009307          	.insn	4, 0x9307
+ 16e:	0500                	.insn	2, 0x0500
+        delay(500000);
+ 170:	656c                	.insn	2, 0x656c
+ 172:	0064                	.insn	2, 0x0064
+ 174:	0000480b          	.insn	4, 0x480b
+ 178:	8000                	.insn	2, 0x8000
+ 17a:	0000                	.insn	2, 0x
+        temp = a + b;
+ 17c:	0100                	.insn	2, 0x0100
+ 17e:	7c9c                	.insn	2, 0x7c9c
+ 180:	0001                	.insn	2, 0x0001
+ 182:	0100                	.insn	2, 0x0100
+ 184:	6176                	.insn	2, 0x6176
+ 186:	006c                	.insn	2, 0x006c
+ 188:	090c                	.insn	2, 0x090c
+ 18a:	004e                	.insn	2, 0x004e
+        a = b;
+ 18c:	0000                	.insn	2, 0x
+ 18e:	9102                	.insn	2, 0x9102
+ 190:	016c                	.insn	2, 0x016c
+ 192:	6964                	.insn	2, 0x6964
+        b = temp;
+ 194:	0072                	.insn	2, 0x0072
+ 196:	090d                	.insn	2, 0x090d
+ 198:	004e                	.insn	2, 0x004e
+ 19a:	0000                	.insn	2, 0x
+        if (b > 65535) { 
+ 19c:	9102                	.insn	2, 0x9102
+ 19e:	0068                	.insn	2, 0x0068
+ 1a0:	0001200f          	.insn	4, 0x0001200f
+ 1a4:	0100                	.insn	2, 0x0100
+ 1a6:	000c0607          	.insn	4, 0x000c0607
+            a = 0; 
+ 1aa:	0000                	.insn	2, 0x
+            b = 1; 
+ 1ac:	003c                	.insn	2, 0x003c
+ 1ae:	0000                	.insn	2, 0x
+ 1b0:	9c01                	.insn	2, 0x9c01
+ 1b2:	a010                	.insn	2, 0xa010
+        LEDS = b;
+ 1b4:	0000                	.insn	2, 0x
+ 1b6:	0100                	.insn	2, 0x0100
+int factorial(int n) {
+ 1b8:	004e1007          	.insn	4, 0x004e1007
+ 1bc:	0000                	.insn	2, 0x
+ 1be:	9102                	.insn	2, 0x9102
+ 1c0:	006c                	.insn	2, 0x006c
+ 1c2:	2d00                	.insn	2, 0x2d00
+ 1c4:	0000                	.insn	2, 0x
+ 1c6:	0500                	.insn	2, 0x0500
+ 1c8:	0100                	.insn	2, 0x0100
+ 1ca:	4b04                	.insn	2, 0x4b04
+    if (n <= 1) return 1;
+ 1cc:	0001                	.insn	2, 0x0001
+ 1ce:	0100                	.insn	2, 0x0100
+ 1d0:	0332                	.insn	2, 0x0332
+ 1d2:	0000                	.insn	2, 0x
+ 1d4:	02f0                	.insn	2, 0x02f0
+ 1d6:	0000                	.insn	2, 0x
+ 1d8:	3a24                	.insn	2, 0x3a24
+ 1da:	0001                	.insn	2, 0x0001
+ 1dc:	7100                	.insn	2, 0x7100
+ 1de:	0001                	.insn	2, 0x0001
+    return n * factorial(n - 1);
+ 1e0:	8700                	.insn	2, 0x8700
+ 1e2:	0000                	.insn	2, 0x
+ 1e4:	0100                	.insn	2, 0x0100
+ 1e6:	0280                	.insn	2, 0x0280
+ 1e8:	01df 0000 f02f      	.insn	6, 0xf02f000001df
+ 1ee:	0002                	.insn	2, 0x0002
+ 1f0:	2400                	.insn	2, 0x2400
+ 1f2:	Address 0x1f2 is out of bounds.
+
+
+Disassembly of section .debug_abbrev:
+
+00000000 <.debug_abbrev>:
+    li sp, 0x00008000 
+   0:	1101                	.insn	2, 0x1101
+   2:	1000                	.insn	2, 0x1000
+    call main
+   4:	12011117          	auipc	sp,0x12011
+    j _park
+   8:	1b0e030f          	.insn	4, 0x1b0e030f
+void delay(int count) {
+   c:	250e                	.insn	2, 0x250e
+   e:	130e                	.insn	2, 0x130e
+  10:	0005                	.insn	2, 0x0005
+  12:	0000                	.insn	2, 0x
+  14:	3401                	.insn	2, 0x3401
+  16:	0300                	.insn	2, 0x0300
+  18:	3a08                	.insn	2, 0x3a08
+  1a:	0121                	.insn	2, 0x0121
+    while(count--) __asm volatile("nop");
+  1c:	0b390b3b          	.insn	4, 0x0b390b3b
+  20:	1349                	.insn	2, 0x1349
+  22:	1802                	.insn	2, 0x1802
+  24:	0000                	.insn	2, 0x
+  26:	3402                	.insn	2, 0x3402
+  28:	0300                	.insn	2, 0x0300
+  2a:	3a0e                	.insn	2, 0x3a0e
+  2c:	0121                	.insn	2, 0x0121
+  2e:	0b390b3b          	.insn	4, 0x0b390b3b
+  32:	1349                	.insn	2, 0x1349
+}
+  34:	1802                	.insn	2, 0x1802
+  36:	0000                	.insn	2, 0x
+  38:	0b002403          	lw	s0,176(zero) # b0 <led+0x68>
+  3c:	030b3e0b          	.insn	4, 0x030b3e0b
+  40:	000e                	.insn	2, 0x000e
+  42:	0400                	.insn	2, 0x0400
+  44:	012e                	.insn	2, 0x012e
+  46:	0e03193f 3b01213a 	.insn	8, 0x3b01213a0e03193f
+void led() {
+  4e:	0621390b          	.insn	4, 0x0621390b
+  52:	0111                	.insn	2, 0x0111
+  54:	0612                	.insn	2, 0x0612
+  56:	1840                	.insn	2, 0x1840
+    int val = 1;
+  58:	197c                	.insn	2, 0x197c
+  5a:	1301                	.insn	2, 0x1301
+  5c:	0000                	.insn	2, 0x
+  5e:	2e05                	.insn	2, 0x2e05
+    int dir = 0; // 0 = left, 1 = right
+  60:	3f01                	.insn	2, 0x3f01
+  62:	0319                	.insn	2, 0x0319
+        LEDS = val;
+  64:	3a08                	.insn	2, 0x3a08
+  66:	0121                	.insn	2, 0x0121
+  68:	21390b3b          	.insn	4, 0x21390b3b
+  6c:	1106                	.insn	2, 0x1106
+  6e:	1201                	.insn	2, 0x1201
+        delay(100000); 
+  70:	4006                	.insn	2, 0x4006
+  72:	7c18                	.insn	2, 0x7c18
+  74:	0119                	.insn	2, 0x0119
+  76:	06000013          	li	zero,96
+  7a:	0111                	.insn	2, 0x0111
+        if (dir == 0) {
+  7c:	0e25                	.insn	2, 0x0e25
+  7e:	1f030b13          	addi	s6,t1,496
+  82:	01111f1b          	.insn	4, 0x01111f1b
+            val = val << 1;
+  86:	0612                	.insn	2, 0x0612
+  88:	1710                	.insn	2, 0x1710
+  8a:	0000                	.insn	2, 0x
+  8c:	3f002e07          	.insn	4, 0x3f002e07
+            if (val >= 0x8000) dir = 1; 
+  90:	0319                	.insn	2, 0x0319
+  92:	3a0e                	.insn	2, 0x3a0e
+  94:	390b3b0b          	.insn	4, 0x390b3b0b
+  98:	1201110b          	.insn	4, 0x1201110b
+  9c:	4006                	.insn	2, 0x4006
+  9e:	7c18                	.insn	2, 0x7c18
+  a0:	0019                	.insn	2, 0x0019
+  a2:	0800                	.insn	2, 0x0800
+  a4:	002e                	.insn	2, 0x002e
+  a6:	0e03193f 0b3b0b3a 	.insn	8, 0x0b3b0b3a0e03193f
+            val = val >> 1;
+  ae:	0b39                	.insn	2, 0x0b39
+  b0:	1349                	.insn	2, 0x1349
+  b2:	0111                	.insn	2, 0x0111
+            if (val <= 1) dir = 0; 
+  b4:	0612                	.insn	2, 0x0612
+  b6:	1840                	.insn	2, 0x1840
+  b8:	197a                	.insn	2, 0x197a
+  ba:	0000                	.insn	2, 0x
+  bc:	2409                	.insn	2, 0x2409
+  be:	0b00                	.insn	2, 0x0b00
+  c0:	030b3e0b          	.insn	4, 0x030b3e0b
+        LEDS = val;
+  c4:	0008                	.insn	2, 0x0008
+  c6:	0a00                	.insn	2, 0x0a00
+void seg() {
+  c8:	012e                	.insn	2, 0x012e
+  ca:	0e03193f 0b3b0b3a 	.insn	8, 0x0b3b0b3a0e03193f
+  d2:	0b39                	.insn	2, 0x0b39
+  d4:	0111                	.insn	2, 0x0111
+  d6:	0612                	.insn	2, 0x0612
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  d8:	1840                	.insn	2, 0x1840
+  da:	197a                	.insn	2, 0x197a
+  dc:	1301                	.insn	2, 0x1301
+  de:	0000                	.insn	2, 0x
+  e0:	3f012e0b          	.insn	4, 0x3f012e0b
+  e4:	0319                	.insn	2, 0x0319
+  e6:	3a0e                	.insn	2, 0x3a0e
+  e8:	390b3b0b          	.insn	4, 0x390b3b0b
+  ec:	4919270b          	.insn	4, 0x4919270b
+  f0:	12011113          	.insn	4, 0x12011113
+  f4:	4006                	.insn	2, 0x4006
+  f6:	7c18                	.insn	2, 0x7c18
+  f8:	0119                	.insn	2, 0x0119
+  fa:	0c000013          	li	zero,192
+    int i = 0;
+  fe:	0005                	.insn	2, 0x0005
+        SEG_REG = segments[i];
+ 100:	0b3a0803          	lb	a6,179(s4)
+ 104:	0b390b3b          	.insn	4, 0x0b390b3b
+ 108:	1349                	.insn	2, 0x1349
+ 10a:	1802                	.insn	2, 0x1802
+ 10c:	0000                	.insn	2, 0x
+ 10e:	010d                	.insn	2, 0x010d
+ 110:	4901                	.insn	2, 0x4901
+ 112:	00130113          	addi	sp,t1,1
+ 116:	0e00                	.insn	2, 0x0e00
+ 118:	0021                	.insn	2, 0x0021
+ 11a:	1349                	.insn	2, 0x1349
+        delay(500000);
+ 11c:	00000b2f          	.insn	4, 0x0b2f
+ 120:	3f012e0f          	.insn	4, 0x3f012e0f
+ 124:	0319                	.insn	2, 0x0319
+ 126:	3a0e                	.insn	2, 0x3a0e
+        i++;
+ 128:	390b3b0b          	.insn	4, 0x390b3b0b
+ 12c:	1119270b          	.insn	4, 0x1119270b
+ 130:	1201                	.insn	2, 0x1201
+ 132:	4006                	.insn	2, 0x4006
+        if (i > 15) i = 0;
+ 134:	7a18                	.insn	2, 0x7a18
+ 136:	0019                	.insn	2, 0x0019
+ 138:	1000                	.insn	2, 0x1000
+ 13a:	0005                	.insn	2, 0x0005
+ 13c:	0b3a0e03          	lb	t3,179(s4)
+ 140:	0b390b3b          	.insn	4, 0x0b390b3b
+        SEG_REG = segments[i];
+ 144:	1349                	.insn	2, 0x1349
+ 146:	1802                	.insn	2, 0x1802
+void fibonacci() {
+ 148:	0000                	.insn	2, 0x
+ 14a:	0100                	.insn	2, 0x0100
+ 14c:	0111                	.insn	2, 0x0111
+ 14e:	1710                	.insn	2, 0x1710
+ 150:	0111                	.insn	2, 0x0111
+ 152:	0f12                	.insn	2, 0x0f12
+ 154:	0e1b0e03          	lb	t3,225(s6)
+    int a = 0;
+ 158:	0e25                	.insn	2, 0x0e25
+ 15a:	00000513          	li	a0,0
+    int b = 1;
+ 15e:	2e02                	.insn	2, 0x2e02
+ 160:	0300                	.insn	2, 0x0300
+ 162:	3f0e                	.insn	2, 0x3f0e
+        LEDS = b;
+ 164:	4919                	.insn	2, 0x4919
+ 166:	1115                	.insn	2, 0x1115
+ 168:	1201                	.insn	2, 0x1201
+ 16a:	0300000f          	fence	rw,unknown
+ 16e:	0000003b          	.insn	4, 0x003b
+	...
+
+Disassembly of section .debug_aranges:
+
+00000000 <.debug_aranges>:
+    li sp, 0x00008000 
+   0:	001c                	.insn	2, 0x001c
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	0002                	.insn	2, 0x0002
+   6:	0000                	.insn	2, 0x
+    j _park
+   8:	0000                	.insn	2, 0x
+   a:	0004                	.insn	2, 0x0004
+	...
+void delay(int count) {
+  14:	000c                	.insn	2, 0x000c
+	...
+    while(count--) __asm volatile("nop");
+  1e:	0000                	.insn	2, 0x
+  20:	001c                	.insn	2, 0x001c
+  22:	0000                	.insn	2, 0x
+  24:	0002                	.insn	2, 0x0002
+  26:	0024                	.insn	2, 0x0024
+  28:	0000                	.insn	2, 0x
+  2a:	0004                	.insn	2, 0x0004
+  2c:	0000                	.insn	2, 0x
+  2e:	0000                	.insn	2, 0x
+  30:	000c                	.insn	2, 0x000c
+  32:	0000                	.insn	2, 0x
+}
+  34:	02e4                	.insn	2, 0x02e4
+	...
+  3e:	0000                	.insn	2, 0x
+  40:	001c                	.insn	2, 0x001c
+  42:	0000                	.insn	2, 0x
+  44:	0002                	.insn	2, 0x0002
+  46:	000001c3          	.insn	4, 0x01c3
+void led() {
+  4a:	0004                	.insn	2, 0x0004
+  4c:	0000                	.insn	2, 0x
+  4e:	0000                	.insn	2, 0x
+  50:	02f0                	.insn	2, 0x02f0
+  52:	0000                	.insn	2, 0x
+  54:	0024                	.insn	2, 0x0024
+	...
+
+Disassembly of section .debug_str:
+
+00000000 <.debug_str>:
+    li sp, 0x00008000 
+   0:	72617473          	.insn	4, 0x72617473
+    call main
+   4:	2e74                	.insn	2, 0x2e74
+   6:	6d2f0073          	.insn	4, 0x6d2f0073
+    j _park
+   a:	746e                	.insn	2, 0x746e
+void delay(int count) {
+   c:	4f2f672f          	.insn	4, 0x4f2f672f
+  10:	656e                	.insn	2, 0x656e
+  12:	7244                	.insn	2, 0x7244
+  14:	7669                	.insn	2, 0x7669
+  16:	2065                	.insn	2, 0x2065
+  18:	202d                	.insn	2, 0x202d
+  1a:	6854                	.insn	2, 0x6854
+    while(count--) __asm volatile("nop");
+  1c:	2065                	.insn	2, 0x2065
+  1e:	6e55                	.insn	2, 0x6e55
+  20:	7669                	.insn	2, 0x7669
+  22:	7265                	.insn	2, 0x7265
+  24:	79746973          	.insn	4, 0x79746973
+  28:	6f20                	.insn	2, 0x6f20
+  2a:	2066                	.insn	2, 0x2066
+  2c:	6554                	.insn	2, 0x6554
+  2e:	6178                	.insn	2, 0x6178
+  30:	74612073          	.insn	4, 0x74612073
+}
+  34:	4120                	.insn	2, 0x4120
+  36:	7375                	.insn	2, 0x7375
+  38:	6974                	.insn	2, 0x6974
+  3a:	2f6e                	.insn	2, 0x2f6e
+  3c:	3030                	.insn	2, 0x3030
+  3e:	2d20                	.insn	2, 0x2d20
+  40:	5520                	.insn	2, 0x5520
+  42:	2054                	.insn	2, 0x2054
+  44:	7541                	.insn	2, 0x7541
+  46:	6e697473          	.insn	4, 0x6e697473
+void led() {
+  4a:	6f72502f          	.insn	4, 0x6f72502f
+  4e:	6566                	.insn	2, 0x6566
+  50:	6f697373          	.insn	4, 0x6f697373
+  54:	616e                	.insn	2, 0x616e
+  56:	2f6c                	.insn	2, 0x2f6c
+    int val = 1;
+  58:	6556                	.insn	2, 0x6556
+  5a:	6972                	.insn	2, 0x6972
+  5c:	6f6c                	.insn	2, 0x6f6c
+  5e:	68542067          	.insn	4, 0x68542067
+    int dir = 0; // 0 = left, 1 = right
+  62:	6e69                	.insn	2, 0x6e69
+        LEDS = val;
+  64:	6c2f7367          	.insn	4, 0x6c2f7367
+  68:	7469                	.insn	2, 0x7469
+  6a:	6c74                	.insn	2, 0x6c74
+  6c:	2d65                	.insn	2, 0x2d65
+  6e:	4952                	.insn	2, 0x4952
+        delay(100000); 
+  70:	562d4353          	.insn	4, 0x562d4353
+  74:	74694c2f          	.insn	4, 0x74694c2f
+  78:	6c74                	.insn	2, 0x6c74
+  7a:	5265                	.insn	2, 0x5265
+        if (dir == 0) {
+  7c:	5349                	.insn	2, 0x5349
+  7e:	2f562d43          	.insn	4, 0x2f562d43
+  82:	6554                	.insn	2, 0x6554
+            val = val << 1;
+  84:	47007473          	.insn	4, 0x47007473
+  88:	554e                	.insn	2, 0x554e
+  8a:	4120                	.insn	2, 0x4120
+  8c:	2e322053          	.insn	4, 0x2e322053
+            if (val >= 0x8000) dir = 1; 
+  90:	3234                	.insn	2, 0x3234
+  92:	7500                	.insn	2, 0x7500
+  94:	736e                	.insn	2, 0x736e
+  96:	6769                	.insn	2, 0x6769
+  98:	656e                	.insn	2, 0x656e
+  9a:	2064                	.insn	2, 0x2064
+  9c:	6e69                	.insn	2, 0x6e69
+  9e:	0074                	.insn	2, 0x0074
+  a0:	6e756f63          	bltu	a0,t2,79e <__mulsi3+0x4ae>
+  a4:	0074                	.insn	2, 0x0074
+  a6:	6574                	.insn	2, 0x6574
+            val = val >> 1;
+  a8:	706d                	.insn	2, 0x706d
+  aa:	7200                	.insn	2, 0x7200
+  ac:	6365                	.insn	2, 0x6365
+  ae:	7275                	.insn	2, 0x7275
+  b0:	65766973          	.insn	4, 0x65766973
+            if (val <= 1) dir = 0; 
+  b4:	6600                	.insn	2, 0x6600
+  b6:	6269                	.insn	2, 0x6269
+  b8:	63616e6f          	jal	t3,166ee <__mulsi3+0x163fe>
+  bc:	6d006963          	bltu	zero,a6,78e <__mulsi3+0x49e>
+  c0:	6961                	.insn	2, 0x6961
+  c2:	006e                	.insn	2, 0x006e
+        LEDS = val;
+  c4:	6461                	.insn	2, 0x6461
+  c6:	5f64                	.insn	2, 0x5f64
+void seg() {
+  c8:	6574                	.insn	2, 0x6574
+  ca:	72007473          	.insn	4, 0x72007473
+  ce:	7365                	.insn	2, 0x7365
+  d0:	6c75                	.insn	2, 0x6c75
+  d2:	0074                	.insn	2, 0x0074
+  d4:	20554e47          	.insn	4, 0x20554e47
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  d8:	20373143          	.insn	4, 0x20373143
+  dc:	3331                	.insn	2, 0x3331
+  de:	322e                	.insn	2, 0x322e
+  e0:	302e                	.insn	2, 0x302e
+  e2:	2d20                	.insn	2, 0x2d20
+  e4:	616d                	.insn	2, 0x616d
+  e6:	6962                	.insn	2, 0x6962
+  e8:	693d                	.insn	2, 0x693d
+  ea:	706c                	.insn	2, 0x706c
+  ec:	2d203233          	.insn	4, 0x2d203233
+  f0:	696d                	.insn	2, 0x696d
+  f2:	732d6173          	.insn	4, 0x732d6173
+  f6:	6570                	.insn	2, 0x6570
+  f8:	30323d63          	.insn	4, 0x30323d63
+    int i = 0;
+  fc:	3931                	.insn	2, 0x3931
+  fe:	3231                	.insn	2, 0x3231
+        SEG_REG = segments[i];
+ 100:	3331                	.insn	2, 0x3331
+ 102:	2d20                	.insn	2, 0x2d20
+ 104:	616d                	.insn	2, 0x616d
+ 106:	6372                	.insn	2, 0x6372
+ 108:	3d68                	.insn	2, 0x3d68
+ 10a:	7672                	.insn	2, 0x7672
+ 10c:	20693233          	.insn	4, 0x20693233
+ 110:	672d                	.insn	2, 0x672d
+ 112:	2d20                	.insn	2, 0x2d20
+ 114:	7300304f          	.insn	4, 0x7300304f
+ 118:	6765                	.insn	2, 0x6765
+ 11a:	656d                	.insn	2, 0x656d
+        delay(500000);
+ 11c:	746e                	.insn	2, 0x746e
+ 11e:	65640073          	.insn	4, 0x65640073
+ 122:	616c                	.insn	2, 0x616c
+ 124:	0079                	.insn	2, 0x0079
+ 126:	6166                	.insn	2, 0x6166
+        i++;
+ 128:	726f7463          	bgeu	t5,t1,850 <__mulsi3+0x560>
+ 12c:	6169                	.insn	2, 0x6169
+ 12e:	006c                	.insn	2, 0x006c
+ 130:	4155                	.insn	2, 0x4155
+ 132:	5452                	.insn	2, 0x5452
+        if (i > 15) i = 0;
+ 134:	6300                	.insn	2, 0x6300
+ 136:	6168                	.insn	2, 0x6168
+ 138:	0072                	.insn	2, 0x0072
+ 13a:	2e2e                	.insn	2, 0x2e2e
+ 13c:	2f2e2e2f          	.insn	4, 0x2f2e2e2f
+ 140:	2e2e                	.insn	2, 0x2e2e
+ 142:	2f2e2e2f          	.insn	4, 0x2f2e2e2f
+        SEG_REG = segments[i];
+ 146:	2e2e                	.insn	2, 0x2e2e
+void fibonacci() {
+ 148:	6363672f          	.insn	4, 0x6363672f
+ 14c:	312d                	.insn	2, 0x312d
+ 14e:	2e322e33          	.insn	4, 0x2e322e33
+ 152:	2f30                	.insn	2, 0x2f30
+ 154:	696c                	.insn	2, 0x696c
+ 156:	6762                	.insn	2, 0x6762
+    int a = 0;
+ 158:	632f6363          	bltu	t5,s2,77e <__mulsi3+0x48e>
+    int b = 1;
+ 15c:	69666e6f          	jal	t3,667f2 <__mulsi3+0x66502>
+ 160:	69722f67          	.insn	4, 0x69722f67
+        LEDS = b;
+ 164:	2f766373          	.insn	4, 0x2f766373
+ 168:	756d                	.insn	2, 0x756d
+ 16a:	646c                	.insn	2, 0x646c
+ 16c:	3369                	.insn	2, 0x3369
+ 16e:	532e                	.insn	2, 0x532e
+        delay(500000);
+ 170:	2f00                	.insn	2, 0x2f00
+ 172:	7562                	.insn	2, 0x7562
+ 174:	6c69                	.insn	2, 0x6c69
+ 176:	2f64                	.insn	2, 0x2f64
+ 178:	2d636367          	.insn	4, 0x2d636367
+        temp = a + b;
+ 17c:	6972                	.insn	2, 0x6972
+ 17e:	36766373          	.insn	4, 0x36766373
+ 182:	2d34                	.insn	2, 0x2d34
+ 184:	6e75                	.insn	2, 0x6e75
+ 186:	776f6e6b          	.insn	4, 0x776f6e6b
+ 18a:	2d6e                	.insn	2, 0x2d6e
+        a = b;
+ 18c:	6c65                	.insn	2, 0x6c65
+ 18e:	2d66                	.insn	2, 0x2d66
+ 190:	4264                	.insn	2, 0x4264
+ 192:	3666                	.insn	2, 0x3666
+        b = temp;
+ 194:	672f4e33          	.insn	4, 0x672f4e33
+ 198:	722d6363          	bltu	s10,sp,8be <__mulsi3+0x5ce>
+        if (b > 65535) { 
+ 19c:	7369                	.insn	2, 0x7369
+ 19e:	34367663          	bgeu	a2,gp,4ea <__mulsi3+0x1fa>
+ 1a2:	752d                	.insn	2, 0x752d
+ 1a4:	6b6e                	.insn	2, 0x6b6e
+ 1a6:	6f6e                	.insn	2, 0x6f6e
+            a = 0; 
+ 1a8:	652d6e77          	.insn	4, 0x652d6e77
+            b = 1; 
+ 1ac:	666c                	.insn	2, 0x666c
+ 1ae:	312d                	.insn	2, 0x312d
+ 1b0:	2f32                	.insn	2, 0x2f32
+ 1b2:	7562                	.insn	2, 0x7562
+        LEDS = b;
+ 1b4:	6c69                	.insn	2, 0x6c69
+ 1b6:	2f64                	.insn	2, 0x2f64
+int factorial(int n) {
+ 1b8:	6972                	.insn	2, 0x6972
+ 1ba:	36766373          	.insn	4, 0x36766373
+ 1be:	2d34                	.insn	2, 0x2d34
+ 1c0:	6e75                	.insn	2, 0x6e75
+ 1c2:	776f6e6b          	.insn	4, 0x776f6e6b
+ 1c6:	2d6e                	.insn	2, 0x2d6e
+ 1c8:	6c65                	.insn	2, 0x6c65
+ 1ca:	2f66                	.insn	2, 0x2f66
+    if (n <= 1) return 1;
+ 1cc:	7672                	.insn	2, 0x7672
+ 1ce:	2f693233          	.insn	4, 0x2f693233
+ 1d2:	6c69                	.insn	2, 0x6c69
+ 1d4:	3370                	.insn	2, 0x3370
+ 1d6:	2f32                	.insn	2, 0x2f32
+ 1d8:	696c                	.insn	2, 0x696c
+ 1da:	6762                	.insn	2, 0x6762
+ 1dc:	5f006363          	bltu	zero,a6,7c2 <__mulsi3+0x4d2>
+    return n * factorial(n - 1);
+ 1e0:	6d5f 6c75 6973      	.insn	6, 0x69736c756d5f
+ 1e6:	Address 0x1e6 is out of bounds.
+
+
+Disassembly of section .debug_frame:
+
+00000000 <.debug_frame>:
+    li sp, 0x00008000 
+   0:	000c                	.insn	2, 0x000c
+   2:	0000                	.insn	2, 0x
+    call main
+   4:	ffff                	.insn	2, 0xffff
+   6:	ffff                	.insn	2, 0xffff
+    j _park
+   8:	7c010003          	lb	zero,1984(sp) # 120117c4 <__mulsi3+0x120114d4>
+void delay(int count) {
+   c:	0d01                	.insn	2, 0x0d01
+   e:	0002                	.insn	2, 0x0002
+  10:	0020                	.insn	2, 0x0020
+  12:	0000                	.insn	2, 0x
+  14:	0000                	.insn	2, 0x
+  16:	0000                	.insn	2, 0x
+  18:	000c                	.insn	2, 0x000c
+  1a:	0000                	.insn	2, 0x
+    while(count--) __asm volatile("nop");
+  1c:	003c                	.insn	2, 0x003c
+  1e:	0000                	.insn	2, 0x
+  20:	0e44                	.insn	2, 0x0e44
+  22:	4420                	.insn	2, 0x4420
+  24:	0188                	.insn	2, 0x0188
+  26:	0c44                	.insn	2, 0x0c44
+  28:	0008                	.insn	2, 0x0008
+  2a:	c868                	.insn	2, 0xc868
+  2c:	020c                	.insn	2, 0x020c
+  2e:	4420                	.insn	2, 0x4420
+  30:	000e                	.insn	2, 0x000e
+  32:	0000                	.insn	2, 0x
+}
+  34:	0018                	.insn	2, 0x0018
+  36:	0000                	.insn	2, 0x
+  38:	0000                	.insn	2, 0x
+  3a:	0000                	.insn	2, 0x
+  3c:	0048                	.insn	2, 0x0048
+  3e:	0000                	.insn	2, 0x
+  40:	0080                	.insn	2, 0x0080
+  42:	0000                	.insn	2, 0x
+  44:	0e44                	.insn	2, 0x0e44
+  46:	4820                	.insn	2, 0x4820
+void led() {
+  48:	0181                	.insn	2, 0x0181
+  4a:	0288                	.insn	2, 0x0288
+  4c:	0c44                	.insn	2, 0x0c44
+  4e:	0008                	.insn	2, 0x0008
+  50:	0018                	.insn	2, 0x0018
+  52:	0000                	.insn	2, 0x
+  54:	0000                	.insn	2, 0x
+  56:	0000                	.insn	2, 0x
+    int val = 1;
+  58:	00c8                	.insn	2, 0x00c8
+  5a:	0000                	.insn	2, 0x
+  5c:	0080                	.insn	2, 0x0080
+  5e:	0000                	.insn	2, 0x
+    int dir = 0; // 0 = left, 1 = right
+  60:	0e44                	.insn	2, 0x0e44
+  62:	4830                	.insn	2, 0x4830
+        LEDS = val;
+  64:	0181                	.insn	2, 0x0181
+  66:	0288                	.insn	2, 0x0288
+  68:	0c44                	.insn	2, 0x0c44
+  6a:	0008                	.insn	2, 0x0008
+  6c:	0018                	.insn	2, 0x0018
+  6e:	0000                	.insn	2, 0x
+        delay(100000); 
+  70:	0000                	.insn	2, 0x
+  72:	0000                	.insn	2, 0x
+  74:	0148                	.insn	2, 0x0148
+  76:	0000                	.insn	2, 0x
+  78:	0070                	.insn	2, 0x0070
+  7a:	0000                	.insn	2, 0x
+        if (dir == 0) {
+  7c:	0e44                	.insn	2, 0x0e44
+  7e:	4820                	.insn	2, 0x4820
+  80:	0181                	.insn	2, 0x0181
+  82:	0288                	.insn	2, 0x0288
+            val = val << 1;
+  84:	0c44                	.insn	2, 0x0c44
+  86:	0008                	.insn	2, 0x0008
+  88:	0024                	.insn	2, 0x0024
+  8a:	0000                	.insn	2, 0x
+  8c:	0000                	.insn	2, 0x
+  8e:	0000                	.insn	2, 0x
+            if (val >= 0x8000) dir = 1; 
+  90:	01b8                	.insn	2, 0x01b8
+  92:	0000                	.insn	2, 0x
+  94:	0060                	.insn	2, 0x0060
+  96:	0000                	.insn	2, 0x
+  98:	0e44                	.insn	2, 0x0e44
+  9a:	4820                	.insn	2, 0x4820
+  9c:	0181                	.insn	2, 0x0181
+  9e:	0288                	.insn	2, 0x0288
+  a0:	0c44                	.insn	2, 0x0c44
+  a2:	0008                	.insn	2, 0x0008
+  a4:	4402                	.insn	2, 0x4402
+  a6:	44c1                	.insn	2, 0x44c1
+            val = val >> 1;
+  a8:	0cc8                	.insn	2, 0x0cc8
+  aa:	2002                	.insn	2, 0x2002
+  ac:	0e44                	.insn	2, 0x0e44
+  ae:	0000                	.insn	2, 0x
+  b0:	0018                	.insn	2, 0x0018
+  b2:	0000                	.insn	2, 0x
+            if (val <= 1) dir = 0; 
+  b4:	0000                	.insn	2, 0x
+  b6:	0000                	.insn	2, 0x
+  b8:	0218                	.insn	2, 0x0218
+  ba:	0000                	.insn	2, 0x
+  bc:	002c                	.insn	2, 0x002c
+  be:	0000                	.insn	2, 0x
+  c0:	0e44                	.insn	2, 0x0e44
+  c2:	4820                	.insn	2, 0x4820
+        LEDS = val;
+  c4:	0181                	.insn	2, 0x0181
+  c6:	0288                	.insn	2, 0x0288
+void seg() {
+  c8:	0c44                	.insn	2, 0x0c44
+  ca:	0008                	.insn	2, 0x0008
+  cc:	0018                	.insn	2, 0x0018
+  ce:	0000                	.insn	2, 0x
+  d0:	0000                	.insn	2, 0x
+  d2:	0000                	.insn	2, 0x
+  d4:	0244                	.insn	2, 0x0244
+  d6:	0000                	.insn	2, 0x
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  d8:	006c                	.insn	2, 0x006c
+  da:	0000                	.insn	2, 0x
+  dc:	0e44                	.insn	2, 0x0e44
+  de:	4420                	.insn	2, 0x4420
+  e0:	0188                	.insn	2, 0x0188
+  e2:	0c44                	.insn	2, 0x0c44
+  e4:	0008                	.insn	2, 0x0008
+  e6:	0000                	.insn	2, 0x
+  e8:	0018                	.insn	2, 0x0018
+  ea:	0000                	.insn	2, 0x
+  ec:	0000                	.insn	2, 0x
+  ee:	0000                	.insn	2, 0x
+  f0:	02b0                	.insn	2, 0x02b0
+  f2:	0000                	.insn	2, 0x
+  f4:	0018                	.insn	2, 0x0018
+  f6:	0000                	.insn	2, 0x
+  f8:	0e44                	.insn	2, 0x0e44
+  fa:	4410                	.insn	2, 0x4410
+    int i = 0;
+  fc:	0188                	.insn	2, 0x0188
+  fe:	0c44                	.insn	2, 0x0c44
+        SEG_REG = segments[i];
+ 100:	0008                	.insn	2, 0x0008
+ 102:	0000                	.insn	2, 0x
+ 104:	0024                	.insn	2, 0x0024
+ 106:	0000                	.insn	2, 0x
+ 108:	0000                	.insn	2, 0x
+ 10a:	0000                	.insn	2, 0x
+ 10c:	02c8                	.insn	2, 0x02c8
+ 10e:	0000                	.insn	2, 0x
+ 110:	0028                	.insn	2, 0x0028
+ 112:	0000                	.insn	2, 0x
+ 114:	0e44                	.insn	2, 0x0e44
+ 116:	4810                	.insn	2, 0x4810
+ 118:	0181                	.insn	2, 0x0181
+ 11a:	0288                	.insn	2, 0x0288
+        delay(500000);
+ 11c:	0c44                	.insn	2, 0x0c44
+ 11e:	0008                	.insn	2, 0x0008
+ 120:	c14c                	.insn	2, 0xc14c
+ 122:	c844                	.insn	2, 0xc844
+ 124:	020c                	.insn	2, 0x020c
+ 126:	4410                	.insn	2, 0x4410
+        i++;
+ 128:	000e                	.insn	2, 0x000e
+	...

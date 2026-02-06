@@ -74,6 +74,13 @@ class UART:
             print("Not connected")
             return False
         
+        if isinstance(addr, str):
+            try:
+                addr = int(addr, 0)
+            except ValueError:
+                print(f"Error: Invalid address format '{addr}'")
+                return None
+        
         try:
             # command (1 byte) + addr (4 bytes) + data (4 bytes)
             # packs CMD, addr, and data into raw bytes
@@ -115,6 +122,13 @@ class UART:
             print("Not connected")
             return None # not bool
         
+        if isinstance(addr, str):
+            try:
+                addr = int(addr, 0)
+            except ValueError:
+                print(f"Error: Invalid address format '{addr}'")
+                return None
+            
         try:
         # command (1 byte) + addr (4 bytes)
             send = struct.pack('>BI', CMD_READ, addr)
@@ -254,8 +268,6 @@ def main():
                 cmd = input("\n> ").strip().split()
                 if not cmd:
                     continue # if empty
-                
-
                 if cmd[0] == 'w' and len(cmd) >= 3: # write
                     addr = int(cmd[1], 0)
                     data = int(cmd[2], 0)

@@ -23,8 +23,8 @@
 module io_controller(
     input logic CLK, clk_led, clk_sseg, 
     input logic btnL, btnR, btnU, btnD,
-    input logic [31:0] R_IO,
-    output logic [6:0] seg,
+    input logic [31:0] sseg_value,
+    output logic [6:0] sseg,
     output logic [3:0] an,
     output logic dBTNL, dBTNR, dBTNU, dBTND
     );
@@ -40,16 +40,16 @@ endmodule
 
 module sevenSeg (
     input logic CLK, clk_sseg, dBTNL,
-    input logic [31:0] R_IO,
-    output logic [6:0] seg,
+    input logic [31:0] sseg_value,
+    output logic [6:0] sseg,
     output logic [3:0] an
     );
-    
-    // save R_IO with additional register to minimize flickering latency from accessing reg file
-    // logic [31:0] R_IO_ff;
+
+    // save sseg_value with additional register to minimize flickering latency from accessing reg file
+    // logic [31:0] sseg_reg_ff;
     
     always @(posedge CLK) begin
-        // R_IO_ff <= R_IO;
+        // sseg_reg_ff <= sseg_value;
         if (clk_sseg) begin
         case(an)
             4'b1110: an <= 4'b1101;
@@ -62,13 +62,13 @@ module sevenSeg (
     end
     
     // dBTNL shows upper 4 hex digits of register
-    wire [3:0] bin_num = (an == 4'b1110) ? ((dBTNL) ? R_IO[19:16] : R_IO[3:0]) :
-                (an == 4'b1101) ? ((dBTNL) ? R_IO[23:20] : R_IO[7:4]) :
-                (an == 4'b1011) ? ((dBTNL) ? R_IO[27:24] : R_IO[11:8]) :
-                (an == 4'b0111) ? ((dBTNL) ? R_IO[31:28] : R_IO[15:12]) :
+    wire [3:0] bin_num = (an == 4'b1110) ? ((dBTNL) ? sseg_value[19:16] : sseg_value[3:0]) :
+                (an == 4'b1101) ? ((dBTNL) ? sseg_value[23:20] : sseg_value[7:4]) :
+                (an == 4'b1011) ? ((dBTNL) ? sseg_value[27:24] : sseg_value[11:8]) :
+                (an == 4'b0111) ? ((dBTNL) ? sseg_value[31:28] : sseg_value[15:12]) :
                     0; // default 0
                     
-    assign seg = (bin_num==0) ? 7'b1000000 :
+    assign sseg = (bin_num==0) ? 7'b1000000 :
                 (bin_num==1) ? 7'b1111001 :
                 (bin_num==2) ? 7'b0100100 :
                 (bin_num==3) ? 7'b0110000 :
