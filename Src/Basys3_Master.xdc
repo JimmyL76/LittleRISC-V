@@ -115,10 +115,13 @@ set_property PACKAGE_PIN U17 [get_ports {btnD}]
 	set_property IOSTANDARD LVCMOS33 [get_ports {btnD}]
  
 
-
-
 #USB-RS232 Interface
 set_property PACKAGE_PIN B18 [get_ports {rx_external}]						
 	set_property IOSTANDARD LVCMOS33 [get_ports {rx_external}]
 set_property PACKAGE_PIN A18 [get_ports {tx_external}]						
 	set_property IOSTANDARD LVCMOS33 [get_ports {tx_external}]
+
+
+## Configuration options, can be used for all designs
+set_property CONFIG_VOLTAGE 3.3 [current_design]
+set_property CFGBVS VCCO [current_design]

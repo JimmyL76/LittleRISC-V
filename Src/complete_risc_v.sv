@@ -83,7 +83,8 @@ module complete_risc_v(
     // logic [31:0] InitPC, Init_Data; assign InitPC = 0; assign Init_Data = 0;
     
     // --- instr and data mem ---
-    Memory #(1, 1) I_MEM (I_CS, CLK, I_WE, I_ADDR, I_Mem_Bus, debug_addr, debug_we, debug_data);
+    logic [31:0] I_debug_addr_in; assign I_debug_addr_in = (debug_active) ? debug_addr : D_ADDR; // allow debug ctrl to access instr mem for manual, otherwise give access to cpu - for accessing values in ROM literals/const arrays
+    Memory #(1, 1) I_MEM (I_CS, CLK, I_WE, I_ADDR, I_Mem_Bus, I_debug_addr_in, debug_we, debug_data);
     Memory #(0, 0) D_MEM (D_CS, CLK, D_WE, D_ADDR, D_Mem_Bus, debug_addr, debug_we, debug_data);
 
     // --- MMIO controller ---

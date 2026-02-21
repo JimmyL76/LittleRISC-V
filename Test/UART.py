@@ -2,7 +2,6 @@
 UART communication for loading instructions and reading data
 """
 
-import time
 import serial
 import struct
 import argparse
@@ -49,6 +48,7 @@ class UART:
         try:
             send = struct.pack('>B', cmd_byte)
             self.ser.write(send) # write and read 1 byte
+            self.ser.reset_input_buffer() # empty PC's receive buffer on every write, avoids cpu echoes
             response = self.ser.read(1)
             return len(response) == 1 and response[0] == ACK # 65 = A
         except Exception as e:
@@ -87,6 +87,7 @@ class UART:
             # time.sleep(0.001)
             send = struct.pack('>BII', CMD_WRITE, addr, data)
             self.ser.write(send)
+            self.ser.reset_input_buffer()
             # wait for acknowledge
             response = self.ser.read(1)
             # print(f"Debug: Write response bytes: {response}")
@@ -133,6 +134,7 @@ class UART:
         # command (1 byte) + addr (4 bytes)
             send = struct.pack('>BI', CMD_READ, addr)
             self.ser.write(send)
+            self.ser.reset_input_buffer()
         
             # wait for FPGA's data (4 bytes)
             response = self.ser.read(4)
@@ -228,6 +230,80 @@ class UART:
             print("Could not release CPU")
 
         return True
+        
+    # functions for UART manual control
+    def send_raw_byte(self, byte_val):
+            """Sends single raw byte (no command header)"""
+            if not self.ser: return False
+            try:
+                self.ser.write(bytes([byte_val]))
+                self.ser.reset_input_buffer()
+                return True
+            except Exception as e:
+                print(f"Error sending raw byte: {e}")
+                return False
+
+    def read_raw_byte(self):
+        """Reads a single raw byte"""
+        if not self.ser: return None
+        try:
+            val = self.ser.read(1)
+            if len(val) == 1:
+                return val[0] # 
+            return None
+        except Exception as e:
+            print(f"Error reading raw byte: {e}")
+            return None
+
+    def interactive_menu(self):
+        """Sub-menu for interacting with running C code"""
+        print("\n--- Interactive Application Mode ---")
+        print("1. Factorial (Sends numbers, reads result)")
+        print("2. Echo (Sends chars, reads echo)")
+        print("x. Exit to Main Menu")
+        
+        choice = input("Select mode: ").strip()
+        
+        if choice == '1':
+            print("Enter numbers (0-5) to calculate factorial. 'q' to quit.")
+            while True:
+                user_input = input("Factorial Input > ").strip()
+                if user_input.lower() == 'q': break
+                
+                try:
+                    val = int(user_input)
+                    if val > 5: print("Warning: Result > 255 will overflow byte")
+
+                    # send raw byte
+                    self.send_raw_byte(val)
+                    
+                    # wait for response
+                    res = self.read_raw_byte()
+                    if res is not None:
+                        print(f"Result: {res}")
+                    else:
+                        print("Timeout")
+                except ValueError:
+                    print("Invalid integer")
+
+        elif choice == '2':
+            print("Enter characters to echo. 'q' to quit.")
+            while True:
+                user_input = input("Echo Input > ").strip()
+                if user_input.lower() == 'q': break
+                if not user_input: continue
+
+                char_to_send = user_input[0].lower() # avoid sending CMD regs
+                
+                # send raw ASCII byte
+                self.send_raw_byte(ord(char_to_send))
+                
+                # wait for response
+                res = self.read_raw_byte()
+                if res is not None:
+                    print(f"Echoed: '{chr(res)}'")
+                else:
+                    print("Timeout")
 
 # main function
 
@@ -235,7 +311,7 @@ def main():
     parser = argparse.ArgumentParser(description='UART interface')
     parser.add_argument('--port', default='COM3',help="Serial port")
     parser.add_argument('--baud', type=int, default=9600, help='Baud rate')
-    parser.add_argument('--load', help='Hex file to load')
+    parser.add_argument('--load', help='Bin or hex file to load')
     parser.add_argument('--addr', type=lambda x: int(x, 0), default=0x00000000, help='Load address')
 
     args = parser.parse_args()
@@ -261,6 +337,7 @@ def main():
         print(" p               - Ping")
         print(" h               - Halt CPU")
         print(" g               - Go/Release CPU")
+        print(" i               - Interactive Mode")
         print(" q               - Quit")
 
         while True: # stay on this until quit
@@ -309,6 +386,9 @@ def main():
                         print("CPU released")
                     else:
                         print("Failed to release CPU")
+                elif cmd[0] == 'i':
+                    uart.release_cpu() 
+                    uart.interactive_menu()
                 elif cmd[0] == 'q':
                     break
                 elif cmd[0] == 'help':
@@ -321,6 +401,7 @@ def main():
                     print(" p               - Ping")
                     print(" h               - Halt CPU")
                     print(" g               - Go/Release CPU")
+                    print(" i               - Interactive Mode")
                     print(" q               - Quit")
                 else:
                     print("Invalid command")

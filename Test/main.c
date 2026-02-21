@@ -55,6 +55,17 @@ void seg() {
     }
 }
 
+void seg_test() {
+    char segments[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    int i = 0;
+    while(1) {
+        SEG_REG = segments[i];
+        // delay(500000);
+        i++;
+        if (i > 15) i = 0;
+    }
+}
+
 void fibonacci() {
     int a = 0;
     int b = 1;
@@ -62,6 +73,7 @@ void fibonacci() {
     
     while(1) {
         LEDS = b;
+        SEG_REG = b;
         delay(500000);
         
         // tests forwarding logic with dependent instrs
@@ -86,10 +98,31 @@ int factorial(int n) {
 void recursive() {
     int result = factorial(5); // 5! = 120
     LEDS = result;
+    SEG_REG = result;
     while(1);
 }
 
-void UART() {
+void recursive_UART() {
+    char n;
+    int result;
+
+    while(1) {
+        while ((UART_STATUS & 1) == 0); 
+        
+        n = UART_DATA; 
+
+        result = factorial(n);
+        LEDS = result;
+        SEG_REG = result; 
+
+        while ((UART_STATUS & 2) != 0);
+        
+        // 5! = 120, 6! = 720 (overflows/truncates)
+        UART_DATA = (char)result;
+    }
+}
+
+void echo_UART() {
     char c;
     while(1) {
         // poll until rx_valid is 1
@@ -97,6 +130,7 @@ void UART() {
         
         c = UART_DATA;
         LEDS = c;
+        SEG_REG = c;
         
         // echo after tx_busy is 0
         while ((UART_STATUS & 2) != 0);
@@ -116,10 +150,12 @@ int add_test() {
 
 void main() {
     // led();
-    led_test();
+    // led_test();
     // seg();
+    // seg_test();
     // fibonacci();
     // recursive();
-    // UART();
+    // recursive_UART();
+    echo_UART();  
     // add_test();
 }

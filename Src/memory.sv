@@ -48,10 +48,9 @@ module Memory #(
             RAM[i] = 32'h0;
         end
     
-      //if (init) $readmemh(INIT_FILE, RAM);
       if (init) $readmemh("instr.mem", RAM);
-    //if (init) $readmemh("C:/Little_RISCV/Little_RISCV.srcs/sources_1/imports/InitMem/led_test.mem", RAM);
-        // if (init) $readmemb("add_test.mem", RAM);
+      // if (init) $readmemh("C:/Little_RISCV/Little_RISCV.srcs/sources_1/imports/InitMem/led_test.mem", RAM);
+      // if (init) $readmemh("seg_test.mem", RAM);
     //   if (init) begin 
     //     fd = $fopen("add_test.bin", "rb");
     //     if (fd == 0) begin
@@ -78,7 +77,13 @@ module Memory #(
     // logic in_range = (debug_addr < MEM_TOP) && (debug_addr >= (MEM_TOP - 32'h00004000));
     logic debug_in_range; assign debug_in_range = (instr) ? (debug_addr[15:14] == 2'b00) : (debug_addr[15:14] == 2'b01); // efficient bit masking - bit 15 checks for MMIO addr spaces
     logic cpu_in_range; assign cpu_in_range = (instr) ? (ADDR[15:14] == 2'b00) : (ADDR[15:14] == 2'b01); // cpu views data and instr mem at x0000-x7FFF, MMIO begins at x8000
-    assign Mem_Bus = ( !((CS == 1'b0) || WE) && cpu_in_range) ? data_out : 32'bZ; // only drive a read when in range to not affect MMIO reads
+
+    assign Mem_Bus = ( !((CS == 1'b0) || WE) && cpu_in_range) ? data_out :
+        (!instr && (ADDR[15:14] == 2'b00) && !WE && CS) ? debug_data : 32'bZ; 
+    // for data_out, only drive a read when in range to not affect MMIO reads
+    // for debug_data, check when D_Mem accesses I_Mem (D_Mem, addr < x4000, read only, D_Mem selected)
+    // debug_data will always be correct if D_Mem needs to access I_Mem -> 3 possible drivers: D_Mem cannot due to debug_in_range, debug_ctrl outputs Z, so only I_Mem
+    // assume debug_ctrl will not be active during normal CPU operation
 
     // port A - CPU
     // for fpga_clk_div, single-cycle enable doesn't work with neg edge clk, switch to posedge at full clk freq

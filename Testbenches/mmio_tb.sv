@@ -94,8 +94,8 @@ module mmio_tb();
             
             // reg or mem dump
             // $display("Reg[10]=%h  Reg[15]=%h", r.CPU.registers.REG[10], r.CPU.registers.REG[15]);
-            // $display("MEM[0x8000]=%h", r.D_MEM.RAM[8000 >> 2]); // word addr
-            $display("MMIO MEM[0x8000]=%h", r.MMIO_ctrl.led_reg); // word addr
+            // $display("MMIO LED=%h", r.MMIO_ctrl.led_reg); 
+            $display("MMIO 7SEG=%h", r.MMIO_ctrl.sseg_reg); 
         end
     endtask
 

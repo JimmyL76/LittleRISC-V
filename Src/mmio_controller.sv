@@ -36,7 +36,7 @@ module mmio_controller(
 
     // when writing UART data, use cont. assign for UART transceiver's 1 cycle delay
     // also avoids weird issues with negedge clk (in old clk_div configuration)
-    assign tx_byte = data_out[7:0]; // 'A' or cont asgn to data reg
+    assign tx_byte = mem_wdata[7:0]; 
     assign tx_start = (mem_we && (mem_addr == 32'h0000_800C)); // when performing strict MMIO addr checks, assume upper bits will always be 0 (always valid addr space)
 
     // double clk_cpu freq, like mem

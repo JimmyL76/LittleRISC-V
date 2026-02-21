@@ -1,5 +1,5 @@
 
-Build/fibonacci.elf:     file format elf32-littleriscv
+Build/recursive_UART.elf:     file format elf32-littleriscv
 
 
 Disassembly of section .text:
@@ -487,14 +487,13 @@ void main() {
  470:	00112623          	sw	ra,12(sp)
  474:	00812423          	sw	s0,8(sp)
  478:	01010413          	addi	s0,sp,16
-    // led();
     // led_test();
     // seg();
     // seg_test();
-    fibonacci();
- 47c:	dadff0ef          	jal	228 <fibonacci>
+    // fibonacci();
     // recursive();
-    // recursive_UART();
+    recursive_UART();
+ 47c:	ec9ff0ef          	jal	344 <recursive_UART>
     // UART();  
     // add_test();
  480:	00000013          	nop
@@ -1106,7 +1105,7 @@ void main() {
  476:	0200                	.insn	2, 0x0200
  478:	0104                	.insn	2, 0x0104
  47a:	04090003          	lb	zero,64(s2)
-    fibonacci();
+    recursive_UART();
  47e:	0100                	.insn	2, 0x0100
  480:	0905                	.insn	2, 0x0905
  482:	04090103          	lb	sp,64(s2)
@@ -1136,10 +1135,10 @@ void main() {
  4be:	04090603          	lb	a2,64(s2)
  4c2:	0100                	.insn	2, 0x0100
  4c4:	0505                	.insn	2, 0x0505
- 4c6:	10090503          	lb	a0,256(s2)
+ 4c6:	10090703          	lb	a4,256(s2)
  4ca:	0100                	.insn	2, 0x0100
  4cc:	0105                	.insn	2, 0x0105
- 4ce:	04090503          	lb	a0,64(s2)
+ 4ce:	04090303          	lb	t1,64(s2)
  4d2:	0100                	.insn	2, 0x0100
  4d4:	1409                	.insn	2, 0x1409
  4d6:	0000                	.insn	2, 0x
