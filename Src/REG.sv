@@ -22,6 +22,7 @@
 
 module REG #(parameter int R_IO_NUM = 1)(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1, ReadReg2, R_IO);
   input logic CLK;
+  // input logic clk_cpu;
   input logic LdR;
   input logic [4:0] RD;
   input logic [4:0] RS1;
@@ -43,8 +44,10 @@ module REG #(parameter int R_IO_NUM = 1)(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1
 //    ReadReg2 = 0;
 //  end
 
-  always @(negedge CLK)
+  // double clk_cpu freq, like mem
+  always @(posedge CLK)
   begin
+    // if (clk_cpu) begin
     // hardware R0 to 0
     REG[0] <= 0;
 
@@ -54,5 +57,14 @@ module REG #(parameter int R_IO_NUM = 1)(CLK, LdR, RD, RS1, RS2, DataR, ReadReg1
     ReadReg1 <= REG[RS1];
     ReadReg2 <= REG[RS2];
     R_IO <= REG[R_IO_NUM];
+    // if ((ReadReg1 === 32'bx) || (ReadReg1 === 32'bz)) begin
+    //     $display("Warning: ReadReg1 is X/Z at time %0t, RS1 = %d", $time, RS1);
+    // end else if (RS1 == 32'd15) begin
+    //     $display("Debug: ReadReg1 = %h at time %0t, RS1 = %d, R[%d]=%h", ReadReg1, $time, RS1, RS1, REG[RS1]);
+    // end
+    // if ((ReadReg2 === 32'bx) || (ReadReg2 === 32'bz)) begin
+    //     $display("Warning: ReadReg2 is X/Z at time %0t, RS2 = %d", $time, RS2);
+    // end
+    // end
   end
 endmodule
