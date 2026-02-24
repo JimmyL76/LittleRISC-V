@@ -16,7 +16,7 @@ The purpose of this project is to expand upon my learning of RTL design and comp
 ![little-risc-v architecture](./readme/little-risc-v-architecture200.png "little-risc-v architecture")
 
 ### Hardware Utilization (Basys 3 / Artix-7)
-*Note: The following metrics are from the Vivado Post-Synthesis Utilization Report.*
+*Note: The following metrics are from Vivado's post-implementation utilization report.*
 
 | Resource | Used | Available | Utilization |
 | :--- | :--- | :--- | :--- |
