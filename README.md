@@ -106,18 +106,18 @@ RISC-V uses six basic instruction formats (R, I, S, B, U, J) all with different 
 <img src="readme/Little-RISC-V%20Basys%203%20Add%20Demo.gif" width="400" alt="Little RISC-V Basys 3 Add Demo">
 
 
-*Using the Basys 3 for synthesis, this video shows the `generate_add_test()` example. The LEDs display the lower 16 bits of the execute stage ALU's input data `ALU.RS1`, and the 7-segment display shows the lower 16 hexadecimal bits of Register 1.*
+Using the Basys 3 for synthesis, this video shows the `generate_add_test()` example. The LEDs display the lower 16 bits of the execute stage ALU's input data `ALU.RS1`, and the 7-segment display shows the lower 16 hexadecimal bits of Register 1.
 
 <br>
 
 <img src="readme/Recursive%20UART%20Basys%203.gif" width="400" alt="Little RISC-V Basys 3 Add Demo">
 <img src="readme/Recursive%20UART%20Terminal.gif" width="400" alt="Little RISC-V Basys 3 Add Demo">
 
-*This side-by-side demo showcases the Python bootloader's interactive mode communicating with `recursive_UART()` running live on the CPU. It proves two functions:*
+This side-by-side demo showcases the Python bootloader's interactive mode communicating with `recursive_UART()` running live on the CPU. It proves two functions:
 
-- *MMIO and UART Communication: The Python script sends raw bytes to the FPGA. The C code polls the MMIO, reads the byte, processes it, updates the physical LEDs/7-segment displays, and writes the result back to the TX hardware to be read by the terminal.*
+- *MMIO and UART Communication:* The Python script sends raw bytes to the FPGA. The C code polls the MMIO, reads the byte, processes it, updates the physical LEDs/7-segment displays, and writes the result back to the TX hardware to be read by the terminal.
 
-- *Pipeline/Stack Stress Test: The C code executes a recursive `factorial()` function based on the user's input. Recursion tests and proves that multiple function calls involving the stack pointer (sp), jump and link, jump return, and memory push/pop operations can execute without data hazards or pipeline stalls.*
+- *Pipeline/Stack Stress Test:* The C code executes a recursive `factorial()` function based on the user's input. Running recursion successfully shows that multiple function calls involving the stack pointer (sp), jump and link, jump return, and memory push/pop operations can execute while properly handling data hazards and pipeline stalls.
 
 ## Repository Structure
 
